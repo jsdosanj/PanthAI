@@ -132,14 +132,14 @@ struct RunJavaScriptTool: AgentTool {
 // MARK: Files app
 
 enum FilesFolder {
-    /// Shown in the Files app under “On My iPad › DosanjhAI” (file sharing is enabled in Info.plist).
+    /// Shown in the Files app under “On My iPad › PanthAI” (file sharing is enabled in Info.plist).
     static var root: URL { URL.documentsDirectory }
     /// Files the assistant creates go here, so it can never overwrite your downloads, evals or anything else in the folder.
-    static var created: URL { root.appending(path: "Created by DosanjhAI", directoryHint: .isDirectory) }
+    static var created: URL { root.appending(path: "Created by PanthAI", directoryHint: .isDirectory) }
 }
 
 struct CreateFileTool: AgentTool {
-    let spec = ToolSpec(name: "create_file", summary: "Create a file the user can open from the Files app (notes, reports, scripts, CSVs). Saved in the DosanjhAI folder.",
+    let spec = ToolSpec(name: "create_file", summary: "Create a file the user can open from the Files app (notes, reports, scripts, CSVs). Saved in the PanthAI folder.",
                         parameters: "path: string, content: string", risk: .write)
     func describe(_ args: [String: JSONValue]) -> String { "Create \(args["path"]?.string ?? "?") in the Files app" }
 
@@ -160,7 +160,7 @@ struct CreateFileTool: AgentTool {
         let url = try resolve(change.path)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try change.after.write(to: url, atomically: true, encoding: .utf8)
-        return ToolOutput(text: "Saved \(change.path). Open the Files app → On My iPad → DosanjhAI → Created by DosanjhAI.", change: change)
+        return ToolOutput(text: "Saved \(change.path). Open the Files app → On My iPad → PanthAI → Created by PanthAI.", change: change)
     }
 }
 

@@ -1,4 +1,4 @@
-# DosanjhAI security
+# PanthAI security
 
 What the app does to protect you, and where the limits are.
 

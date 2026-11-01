@@ -79,7 +79,7 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .searchable(text: $state.searchText, placement: .sidebar, prompt: "Search chats")
-        .navigationTitle("DosanjhAI")
+        .navigationTitle("PanthAI")
         .confirmationDialog("Delete this chat?", isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
                             titleVisibility: .visible, presenting: pendingDelete) { record in
             Button("Delete Chat", role: .destructive) {

@@ -41,7 +41,7 @@ enum WorkspaceFiles {
         var result: [String] = []
         for case let url as URL in walker where (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
             let relative = String(url.path.dropFirst(base.path.count + 1))
-            if !relative.hasPrefix(".dosanjhai") { result.append(relative) }
+            if !relative.hasPrefix(".panthai") { result.append(relative) }
         }
         return result.sorted()
     }
@@ -71,7 +71,7 @@ enum WorkspaceImporter {
         var shas: [String: String]  // path -> git blob sha at head
     }
 
-    static func manifestURL(_ root: URL) -> URL { root.appending(path: ".dosanjhai/manifest.json") }
+    static func manifestURL(_ root: URL) -> URL { root.appending(path: ".panthai/manifest.json") }
     static func loadManifest(_ root: URL) -> Manifest? {
         (try? Data(contentsOf: manifestURL(root))).flatMap { try? JSONDecoder().decode(Manifest.self, from: $0) }
     }
@@ -86,7 +86,7 @@ enum WorkspaceImporter {
         var truncated = false
         for entry in entries where entry.type == "blob" {
             let parts = entry.path.split(separator: "/").map(String.init)
-            if entry.path.hasPrefix("/") || parts.contains("..") || entry.path.contains("\0") || parts.first?.lowercased() == ".dosanjhai" { continue }   // never write outside the folder
+            if entry.path.hasPrefix("/") || parts.contains("..") || entry.path.contains("\0") || parts.first?.lowercased() == ".panthai" { continue }   // never write outside the folder
             if parts.dropLast().contains(where: ignoredDirectories.contains) { continue }
             if binaryExtensions.contains((entry.path as NSString).pathExtension.lowercased()) { continue }
             let size = entry.size ?? 0

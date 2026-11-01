@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 import Testing
 import UIKit
-@testable import DosanjhAI
+@testable import PanthAI
 
 /// Builds each screen inside a real window, lays it out and saves a PNG. Catches crashes and empty screens
 /// without needing the simulator's accessibility channel.
@@ -27,7 +27,7 @@ struct ScreenSmokeTests {
         RunLoop.main.run(until: Date().addingTimeInterval(0.6))
         host.view.layoutIfNeeded()
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in window.drawHierarchy(in: window.bounds, afterScreenUpdates: true) }
-        let dir = URL(filePath: "/tmp/dosanjhai-shots", directoryHint: .isDirectory)
+        let dir = URL(filePath: "/tmp/panthai-shots", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try image.pngData()?.write(to: dir.appending(path: "\(name).png"))
         // A blank (all one colour) picture means nothing was drawn.

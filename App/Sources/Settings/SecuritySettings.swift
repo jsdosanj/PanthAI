@@ -20,7 +20,7 @@ struct SecuritySection: View {
             Toggle("Require Face ID for SSH keys", isOn: $protectKeys)
             Toggle("Maximum file protection", isOn: $maxProtection)
                 .onChange(of: maxProtection) { _, _ in DataProtection.apply() }
-            Button("Erase all DosanjhAI data…", role: .destructive) { confirmErase = true }
+            Button("Erase all PanthAI data…", role: .destructive) { confirmErase = true }
         } header: {
             Text("Security")
         } footer: {

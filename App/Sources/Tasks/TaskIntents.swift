@@ -29,8 +29,8 @@ struct TaskEntityQuery: EntityStringQuery {
 /// Run a saved task. Put it in a Shortcuts automation (time of day, arriving somewhere, charging…)
 /// to schedule it. The result is saved as a chat and returned to the shortcut.
 struct RunTaskIntent: AppIntent {
-    static let title: LocalizedStringResource = "Run DosanjhAI Task"
-    static let description = IntentDescription("Runs one of your saved DosanjhAI tasks and returns the result. Use it in a Shortcuts automation to schedule it.")
+    static let title: LocalizedStringResource = "Run PanthAI Task"
+    static let description = IntentDescription("Runs one of your saved PanthAI tasks and returns the result. Use it in a Shortcuts automation to schedule it.")
     static let openAppWhenRun = false
 
     @Parameter(title: "Task") var task: TaskEntity

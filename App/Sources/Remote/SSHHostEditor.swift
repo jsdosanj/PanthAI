@@ -70,7 +70,7 @@ struct SSHHostEditor: View {
                     Button("Forget trust", role: .destructive) { host.trustedFingerprint = "" }
                 }
                 if !status.isEmpty { Text(status).font(.footnote).foregroundStyle(.secondary) }
-            } header: { Text("Identity") } footer: { Text("On the machine, run ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub and compare. If the key ever changes, DosanjhAI refuses to connect.") }
+            } header: { Text("Identity") } footer: { Text("On the machine, run ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub and compare. If the key ever changes, PanthAI refuses to connect.") }
             Section {
                 TextField("Folder for Claude Code / Codex", text: $host.workingDirectory).textInputAutocapitalization(.never).autocorrectionDisabled()
                 Picker("Shell", selection: $host.shell) { Text("zsh").tag("zsh"); Text("bash").tag("bash"); Text("sh").tag("sh") }

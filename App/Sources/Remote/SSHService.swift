@@ -96,7 +96,7 @@ enum SSHService {
     private static func publicLine(for key: Curve25519.Signing.PrivateKey) -> String {
         func field(_ bytes: [UInt8]) -> [UInt8] { withUnsafeBytes(of: UInt32(bytes.count).bigEndian) { Array($0) } + bytes }
         let blob = field(Array("ssh-ed25519".utf8)) + field(Array(key.publicKey.rawRepresentation))
-        return "ssh-ed25519 \(Data(blob).base64EncodedString()) DosanjhAI"
+        return "ssh-ed25519 \(Data(blob).base64EncodedString()) PanthAI"
     }
 
     static func fingerprint(of key: NIOSSHPublicKey) -> String {

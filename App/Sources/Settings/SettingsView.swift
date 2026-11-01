@@ -50,7 +50,7 @@ struct SettingsView: View {
 
     @ViewBuilder private var keyboardSection: some View {
                 Section {
-                    Toggle("Show keyboard when DosanjhAI opens", isOn: $focusOnLaunch)
+                    Toggle("Show keyboard when PanthAI opens", isOn: $focusOnLaunch)
                     Toggle("Return sends message", isOn: $returnSends)
                 } header: {
                     Text("Keyboard")
@@ -91,7 +91,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Tools")
                 } footer: {
-                    Text("Network defaults to full access. Change it for a single chat in its details panel, including an allow-list of sites. Without a Brave key, search uses DuckDuckGo. Files the assistant creates appear in the Files app under On My iPad › DosanjhAI.")
+                    Text("Network defaults to full access. Change it for a single chat in its details panel, including an allow-list of sites. Without a Brave key, search uses DuckDuckGo. Files the assistant creates appear in the Files app under On My iPad › PanthAI.")
                 }
     }
 
@@ -121,13 +121,13 @@ struct SettingsView: View {
                 } header: {
                     Text("Siri & Shortcuts")
                 } footer: {
-                    Text("Say \"Ask DosanjhAI\", or \"Open [chat] in DosanjhAI\". Siri can also see which chat is on screen and search your chats. Titles and recent messages are added to this iPad's on-device search index; nothing leaves the iPad. Turning this off removes them.")
+                    Text("Say \"Ask PanthAI\", or \"Open [chat] in PanthAI\". Siri can also see which chat is on screen and search your chats. Titles and recent messages are added to this iPad's on-device search index; nothing leaves the iPad. Turning this off removes them.")
                 }
     }
 
     @ViewBuilder private var privacyNote: some View {
                 Section("Privacy") {
-                    Text("DosanjhAI has no accounts and collects no data. The advanced Apple model runs on Apple's Private Cloud Compute, so your prompts leave the iPad for Apple's servers when you choose it; Apple states it doesn't store them.")
+                    Text("PanthAI has no accounts and collects no data. The advanced Apple model runs on Apple's Private Cloud Compute, so your prompts leave the iPad for Apple's servers when you choose it; Apple states it doesn't store them.")
                         .font(.footnote)
                 }
     }

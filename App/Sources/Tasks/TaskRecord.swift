@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// A saved prompt that Shortcuts can run on a schedule or trigger ("Run DosanjhAI Task").
+/// A saved prompt that Shortcuts can run on a schedule or trigger ("Run PanthAI Task").
 @Model
 final class TaskRecord {
     var id: UUID = UUID()

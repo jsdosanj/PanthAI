@@ -59,7 +59,7 @@ struct Personalization: Sendable, Equatable {
     }
 
     func instructions(conversation: String = "", kind: SessionKind = .chat, extra: String = "") -> String {
-        var parts = ["You are DosanjhAI, a helpful assistant running on the user's iPad.", style.directive]
+        var parts = ["You are PanthAI, a helpful assistant running on the user's iPad.", style.directive]
         if kind == .code {
             parts.append("This is a long-running coding session. Write complete, correct code in fenced blocks with a language tag. Keep answers focused, remember files, names and decisions from earlier in the session, and say so when you are unsure rather than guessing.")
         }

@@ -16,7 +16,7 @@ struct FineTuneView: View {
     var body: some View {
         Form {
             Section {
-                Label("Experimental. Keep DosanjhAI open with the screen on. Training heats the iPad and works best on small models (up to about 4 GB).", systemImage: "flask")
+                Label("Experimental. Keep PanthAI open with the screen on. Training heats the iPad and works best on small models (up to about 4 GB).", systemImage: "flask")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section("Base model") {

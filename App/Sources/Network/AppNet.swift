@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Every request DosanjhAI makes goes through `AppNet.session`, which records it in the activity log
+/// Every request PanthAI makes goes through `AppNet.session`, which records it in the activity log
 /// and enforces the offline switch. (Apple's Private Cloud Compute model and sign-in sheets are
 /// handled by iPadOS itself, so they don't appear here.)
 enum AppNet {
@@ -86,7 +86,7 @@ final class NetLog {
 
 /// Sits in front of every request: logs it, blocks it in offline mode, otherwise passes it through untouched.
 final class NetGuardProtocol: URLProtocol, URLSessionDataDelegate, @unchecked Sendable {
-    private static let handledKey = "DosanjhAI.handled"
+    private static let handledKey = "PanthAI.handled"
     private var innerTask: URLSessionDataTask?
     private var entryID: UUID?
     private var received = 0

@@ -15,7 +15,7 @@ enum MCPOAuth {
         var resource: String
     }
 
-    static let redirect = "dosanjhai://oauth/callback"
+    static let redirect = "panthai://oauth/callback"
 
     // MARK: Using stored tokens
 
@@ -49,10 +49,10 @@ enum MCPOAuth {
             throw MCPError.server("The sign-in service is incomplete.")
         }
         guard let registration = server["registration_endpoint"]?.string else {
-            throw MCPError.server("This server needs a pre-registered app, which DosanjhAI can't do. Paste an access token instead.")
+            throw MCPError.server("This server needs a pre-registered app, which PanthAI can't do. Paste an access token instead.")
         }
         let register = try await postJSON(try secure(registration), body: [
-            "client_name": .string("DosanjhAI"), "redirect_uris": .array([.string(redirect)]),
+            "client_name": .string("PanthAI"), "redirect_uris": .array([.string(redirect)]),
             "grant_types": .array([.string("authorization_code"), .string("refresh_token")]),
             "response_types": .array([.string("code")]), "token_endpoint_auth_method": .string("none"),
         ])
@@ -73,7 +73,7 @@ enum MCPOAuth {
         comps.queryItems = items
 
         guard let authURL = comps.url else { throw MCPError.server("Bad sign-in address.") }
-        let callback = try await WebAuth.run(url: authURL, scheme: "dosanjhai")
+        let callback = try await WebAuth.run(url: authURL, scheme: "panthai")
         let returned = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
         guard returned.first(where: { $0.name == "state" })?.value == state, let code = returned.first(where: { $0.name == "code" })?.value else {
             throw MCPError.server("Sign-in was cancelled or failed.")

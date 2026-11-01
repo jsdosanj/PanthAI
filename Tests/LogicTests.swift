@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import DosanjhAI
+@testable import PanthAI
 
 struct LogicTests {
     @Test func stopSequenceCutsAtFirstMatch() {
@@ -93,8 +93,8 @@ struct LogicTests {
 
     @Test func reservedFolderCannotBeReachedWithDotSegments() {
         let root = URL(filePath: "/tmp/ws")
-        #expect(throws: ToolError.self) { try WorkspacePath.resolve("./.dosanjhai/manifest.json", root: root) }
-        #expect(throws: ToolError.self) { try WorkspacePath.resolve(".DOSANJHAI/manifest.json", root: root) }
+        #expect(throws: ToolError.self) { try WorkspacePath.resolve("./.panthai/manifest.json", root: root) }
+        #expect(throws: ToolError.self) { try WorkspacePath.resolve(".PANTHAI/manifest.json", root: root) }
     }
 
     @Test func gentleRedactionKeepsSourceCode() {

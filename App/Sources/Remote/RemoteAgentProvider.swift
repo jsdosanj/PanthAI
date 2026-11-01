@@ -6,7 +6,7 @@ enum RemoteAgentKind: String, CaseIterable, Sendable {
 }
 
 /// Runs Claude Code or Codex on the user's own machine over SSH and streams what they print.
-/// The agent keeps its own tools and files; DosanjhAI just sends the prompt and shows the output.
+/// The agent keeps its own tools and files; PanthAI just sends the prompt and shows the output.
 final class RemoteAgentProvider: ModelProvider, @unchecked Sendable {
     let host: SSHHostSnapshot
     let kind: RemoteAgentKind

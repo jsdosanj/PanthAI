@@ -148,7 +148,7 @@ final class ChatViewModel {
     private func requestApproval(_ approval: PendingApproval) async -> ApprovalDecision {
         if isHeadless { return .deny }
         pendingApproval = approval
-        Notifier.post(.permission, title: "DosanjhAI needs your OK", body: "A tool is waiting for permission. Open the app to review it.", chatID: id, approvalID: approval.id)
+        Notifier.post(.permission, title: "PanthAI needs your OK", body: "A tool is waiting for permission. Open the app to review it.", chatID: id, approvalID: approval.id)
         return await withCheckedContinuation { approvalContinuation = $0 }
     }
 
@@ -167,7 +167,7 @@ final class ChatViewModel {
         return ((try? AppData.container.mainContext.fetch(FetchDescriptor<SSHHostRecord>())) ?? []).first { $0.id == id }?.snapshot
     }
 
-    /// Claude Code / Codex over SSH bring their own tools, so DosanjhAI's tool loop stays out of the way.
+    /// Claude Code / Codex over SSH bring their own tools, so PanthAI's tool loop stays out of the way.
     private var availableTools: [any AgentTool] {
         isRemoteAgent ? [] : ToolRegistry.tools(kind: record.kind, hasWorkspace: workspace != nil, networkMode: record.network, hasSSH: sshHost != nil) + connectorTools
     }

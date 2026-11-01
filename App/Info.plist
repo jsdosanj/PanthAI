@@ -26,9 +26,9 @@
 		<true/>
 	</dict>
 	<key>NSFaceIDUsageDescription</key>
-	<string>DosanjhAI uses Face ID to unlock the app and to protect your SSH keys.</string>
+	<string>PanthAI uses Face ID to unlock the app and to protect your SSH keys.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>DosanjhAI connects to LM Studio, Ollama and other servers on your network when you add them.</string>
+	<string>PanthAI connects to LM Studio, Ollama and other servers on your network when you add them.</string>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 </dict>

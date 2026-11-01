@@ -5,7 +5,7 @@ import Security
 /// Minimal Keychain wrapper. Ordinary secrets (API tokens) sync through the user's iCloud Keychain, which is
 /// end-to-end encrypted. SSH keys and passwords stay on this iPad and can require Face ID / passcode on every use.
 enum Keychain {
-    private static let service = "com.dosanjhlabs.dosanjhai"
+    private static let service = "com.dosanjhlabs.panthai"
 
     /// One shared authentication, so connecting to several machines in a row asks for Face ID once.
     nonisolated(unsafe) private static let authContext: LAContext = {

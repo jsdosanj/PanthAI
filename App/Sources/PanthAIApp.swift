@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 @main
-struct DosanjhAIApp: App {
+struct PanthAIApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     var body: some Scene {
         // Each window has its own sidebar selection, tabs and inspector (multi-window / Stage Manager).

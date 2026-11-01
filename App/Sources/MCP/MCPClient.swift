@@ -120,7 +120,7 @@ actor MCPClient {
         guard !initialized else { return }
         _ = try await request("initialize", [
             "protocolVersion": .string("2025-03-26"), "capabilities": .object([:]),
-            "clientInfo": .object(["name": .string("DosanjhAI"), "version": .string("0.1")]),
+            "clientInfo": .object(["name": .string("PanthAI"), "version": .string("0.1")]),
         ])
         _ = try await post(["jsonrpc": .string("2.0"), "method": .string("notifications/initialized")], expectResponse: false)
         initialized = true

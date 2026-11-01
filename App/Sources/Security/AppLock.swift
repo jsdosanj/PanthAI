@@ -35,7 +35,7 @@ final class AppLock {
             isLocked = false   // no passcode set on this iPad, so there is nothing to ask for
             return
         }
-        if (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock DosanjhAI")) == true { isLocked = false }
+        if (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Unlock PanthAI")) == true { isLocked = false }
     }
 }
 
@@ -52,7 +52,7 @@ struct PrivacyShield: ViewModifier {
                 if lock.isLocked {
                     VStack(spacing: 16) {
                         Image(systemName: "lock.fill").font(.largeTitle)
-                        Text("DosanjhAI is locked").font(.title2.weight(.semibold))
+                        Text("PanthAI is locked").font(.title2.weight(.semibold))
                         Button("Unlock", systemImage: "faceid") { Task { await lock.unlock() } }.buttonStyle(.borderedProminent).controlSize(.large)
                     }
                     .padding(40)

@@ -25,7 +25,7 @@ struct TasksSection: View {
         } header: {
             Text("Scheduled tasks")
         } footer: {
-            Text("To run a task on a schedule: open Shortcuts → Automation → New Automation → pick a time (or a place, or when charging) → add the “Run DosanjhAI Task” action → choose your task. iPadOS decides how long background actions may run, so keep tasks short. Downloaded models can't run in the background; use Apple's model, a cloud model or LM Studio.")
+            Text("To run a task on a schedule: open Shortcuts → Automation → New Automation → pick a time (or a place, or when charging) → add the “Run PanthAI Task” action → choose your task. iPadOS decides how long background actions may run, so keep tasks short. Downloaded models can't run in the background; use Apple's model, a cloud model or LM Studio.")
         }
     }
 }

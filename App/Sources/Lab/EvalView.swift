@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// A set of prompts with expected answers. Saved as JSON in the Files app (On My iPad › DosanjhAI › Evals).
+/// A set of prompts with expected answers. Saved as JSON in the Files app (On My iPad › PanthAI › Evals).
 struct EvalSuite: Codable, Identifiable, Hashable {
     struct Case: Codable, Identifiable, Hashable {
         var id = UUID()

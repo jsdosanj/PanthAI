@@ -58,7 +58,7 @@ struct ChatScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(record.title)
         .focusedSceneValue(\.chatModel, model)
-        .userActivity("com.dosanjhlabs.dosanjhai.chat", isActive: ChatIndexer.isEnabled && !record.isEmpty) { activity in
+        .userActivity("com.dosanjhlabs.panthai.chat", isActive: ChatIndexer.isEnabled && !record.isEmpty) { activity in
             // Lets Siri see which chat is on screen ("summarise this chat").
             activity.title = record.title
             activity.appEntityIdentifier = EntityIdentifier(for: ChatEntity(record))
@@ -74,7 +74,7 @@ struct ChatScreen: View {
             }
             Button("Cancel", role: .cancel) { model.pendingConsent = nil }
         } message: {
-            Text("Your messages, and any file, web page or tool output in this chat, will leave this iPad and go to the provider you chose. Their privacy policy applies, not DosanjhAI's.")
+            Text("Your messages, and any file, web page or tool output in this chat, will leave this iPad and go to the provider you chose. Their privacy policy applies, not PanthAI's.")
         }
         .sheet(isPresented: Bindable(model).showRepoPicker) { RepoPickerSheet(model: model) }
         .sheet(isPresented: Bindable(model).showHistorySearch) { PromptHistorySheet(model: model) }
@@ -258,7 +258,7 @@ private struct Composer: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 HStack(alignment: .bottom, spacing: 8) {
-                    TextField(model.kind == .code ? "Describe what to build, or paste code" : "Message DosanjhAI",
+                    TextField(model.kind == .code ? "Describe what to build, or paste code" : "Message PanthAI",
                               text: $model.input, axis: .vertical)
                         .font(model.kind == .code ? .system(.body, design: .monospaced) : .body)
                         .lineLimit(1...8)

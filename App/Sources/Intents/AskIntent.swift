@@ -2,11 +2,11 @@ import AppIntents
 import FoundationModels
 import SwiftData
 
-/// "Ask DosanjhAI …" from Siri, Spotlight, Shortcuts and the Action button.
+/// "Ask PanthAI …" from Siri, Spotlight, Shortcuts and the Action button.
 /// Runs on-device and never opens the app. Pass a chat to continue it with its full context.
 struct AskIpadAIIntent: AppIntent {
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
-    static let title: LocalizedStringResource = "Ask DosanjhAI"
+    static let title: LocalizedStringResource = "Ask PanthAI"
     static let description = IntentDescription("Ask the on-device Apple model a question, optionally inside one of your chats.")
     static let openAppWhenRun = false
 
@@ -16,7 +16,7 @@ struct AskIpadAIIntent: AppIntent {
     @Parameter(title: "Chat", description: "Continue this chat so the answer uses its context.")
     var chat: ChatEntity?
 
-    static var parameterSummary: some ParameterSummary { Summary("Ask DosanjhAI \(\.$question) in \(\.$chat)") }
+    static var parameterSummary: some ParameterSummary { Summary("Ask PanthAI \(\.$question) in \(\.$chat)") }
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
@@ -48,7 +48,7 @@ struct AskIpadAIIntent: AppIntent {
 struct OpenChatIntent: AppIntent {
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Open Chat"
-    static let description = IntentDescription("Open one of your DosanjhAI chats.")
+    static let description = IntentDescription("Open one of your PanthAI chats.")
     static let openAppWhenRun = true
 
     @Parameter(title: "Chat") var chat: ChatEntity
@@ -77,7 +77,7 @@ struct GetLastReplyIntent: AppIntent {
 struct SearchChatsIntent: AppIntent {
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Search Chats"
-    static let description = IntentDescription("Find DosanjhAI chats that mention something.")
+    static let description = IntentDescription("Find PanthAI chats that mention something.")
     static let openAppWhenRun = false
 
     @Parameter(title: "Search for") var text: String
@@ -91,7 +91,7 @@ struct IpadAIShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: AskIpadAIIntent(),
                     phrases: ["Ask \(.applicationName)", "Ask \(.applicationName) a question", "Chat with \(.applicationName)"],
-                    shortTitle: "Ask DosanjhAI", systemImageName: "bubble.left.and.bubble.right")
+                    shortTitle: "Ask PanthAI", systemImageName: "bubble.left.and.bubble.right")
         AppShortcut(intent: RunTaskIntent(),
                     phrases: ["Run \(\.$task) in \(.applicationName)"],
                     shortTitle: "Run Task", systemImageName: "clock.arrow.circlepath")

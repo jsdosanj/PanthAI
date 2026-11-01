@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import DosanjhAI
+@testable import PanthAI
 
 struct ToolTests {
     @Test func parsesFencedToolCall() {
@@ -23,7 +23,7 @@ struct ToolTests {
         let root = URL(filePath: "/tmp/ws")
         #expect(throws: ToolError.self) { try WorkspacePath.resolve("../etc/passwd", root: root) }
         #expect(throws: ToolError.self) { try WorkspacePath.resolve("/etc/passwd", root: root) }
-        #expect(throws: ToolError.self) { try WorkspacePath.resolve(".dosanjhai/manifest.json", root: root) }
+        #expect(throws: ToolError.self) { try WorkspacePath.resolve(".panthai/manifest.json", root: root) }
         #expect((try? WorkspacePath.resolve("src/main.swift", root: root)) != nil)
     }
 

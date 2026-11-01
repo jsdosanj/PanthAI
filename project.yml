@@ -1,4 +1,4 @@
-name: DosanjhAI
+name: PanthAI
 options:
   bundleIdPrefix: com.dosanjhlabs
   deploymentTarget:
@@ -43,7 +43,7 @@ packages:
     url: https://github.com/migueldeicaza/SwiftTerm
     exactVersion: 1.99.2
 targets:
-  DosanjhAI:
+  PanthAI:
     type: application
     platform: iOS
     sources: [App/Sources, App/Resources]
@@ -52,8 +52,8 @@ targets:
       properties:
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
-        NSLocalNetworkUsageDescription: DosanjhAI connects to LM Studio, Ollama and other servers on your network when you add them.
-        NSFaceIDUsageDescription: DosanjhAI uses Face ID to unlock the app and to protect your SSH keys.
+        NSLocalNetworkUsageDescription: PanthAI connects to LM Studio, Ollama and other servers on your network when you add them.
+        NSFaceIDUsageDescription: PanthAI uses Face ID to unlock the app and to protect your SSH keys.
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
     dependencies:
@@ -85,10 +85,10 @@ targets:
         product: Crypto
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.dosanjhai
-        PRODUCT_NAME: DosanjhAI
-        CODE_SIGN_ENTITLEMENTS: App/DosanjhAI.entitlements
-        INFOPLIST_KEY_CFBundleDisplayName: DosanjhAI
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.panthai
+        PRODUCT_NAME: PanthAI
+        CODE_SIGN_ENTITLEMENTS: App/PanthAI.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: PanthAI
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -97,13 +97,13 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         GENERATE_INFOPLIST_FILE: YES
-  DosanjhAITests:
+  PanthAITests:
     type: bundle.unit-test
     platform: iOS
     sources: [Tests]
     dependencies:
-      - target: DosanjhAI
+      - target: PanthAI
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.dosanjhai.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.panthai.tests
