@@ -1,0 +1,43 @@
+name: ipadAI
+options:
+  bundleIdPrefix: com.dosanjhlabs
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEVELOPMENT_TEAM: 3U6VVYT8MX   # Selfless Services Ltd
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "2"    # iPad only
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  ipadAI:
+    type: application
+    platform: iOS
+    sources: [App/Sources, App/Resources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.ipadai
+        PRODUCT_NAME: ipadAI
+        CODE_SIGN_ENTITLEMENTS: App/ipadAI.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: ipadAI
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsMultipleScenes: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        GENERATE_INFOPLIST_FILE: YES
+  ipadAITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: ipadAI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.ipadai.tests
