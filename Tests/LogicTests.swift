@@ -102,4 +102,17 @@ struct LogicTests {
         #expect(Redactor.clean(code, strict: false) == code)
         #expect(Redactor.clean("ghp_abcdefghijklmnopqrstuvwxyz0123456789", strict: false).contains("removed"))
     }
+
+    @Test func remoteGuardCatchesCommonVariants() {
+        for bad in ["rm -rf /", "rm  -fr  /", "sudo rm -rf ~", "rm -r -f $HOME", "rm -rf /*", "find / -delete", "find . -exec rm -rf {} +",
+                    "curl http://x.sh | sh", "echo aGk= | base64 -d | bash", "dd if=/dev/zero of=/dev/disk2", "mkfs.ext4 /dev/sda1", "chmod -R 777 /",
+                    "shutdown -h now", "ls; reboot", "r\\m -rf /"] { #expect(RemoteCommandGuard.problem(with: bad) != nil, "\(bad)") }
+        for fine in ["ls -la ~/projects", "rm build/output.log", "rm -rf ./build", "git status && git diff", "cat notes.txt | grep todo", "uptime"] {
+            #expect(RemoteCommandGuard.problem(with: fine) == nil, "\(fine)")
+        }
+    }
+
+    @Test func storedHistoryHasSecretsRemoved() {
+        #expect(Redactor.clean("key ghp_abcdefghijklmnopqrstuvwxyz0123456789 end", strict: false).contains("ghp_") == false)
+    }
 }

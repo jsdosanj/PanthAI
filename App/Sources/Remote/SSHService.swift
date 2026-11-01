@@ -259,12 +259,46 @@ extension SSHService {
     }
 }
 
-/// Commands that would damage the machine are refused even if the user approves, because a model chose them.
+/// A best-effort refusal of obviously destructive commands before they are even offered for approval.
+/// This is a safety net, not a security boundary: every remote command still needs the user's approval,
+/// and shell syntax is too flexible to block everything.
 enum RemoteCommandGuard {
     static func problem(with command: String) -> String? {
-        let lower = command.lowercased()
-        let banned = ["rm -rf /", "rm -rf ~", "rm -rf *", "mkfs", "dd if=", "dd of=/dev", ":(){", "shutdown", "reboot", "halt", "poweroff", "> /dev/sd", "chmod -r 777 /", "chown -r", "diskutil erase", "format "]
-        if let hit = banned.first(where: { lower.contains($0) }) { return "Refused: “\(hit)” could damage the machine. Run it yourself from the Terminal if you really mean it." }
+        // Look at each command in a pipeline or list separately, with quoting and backslashes removed.
+        let flat = command.replacingOccurrences(of: "\\", with: "").replacingOccurrences(of: "\"", with: "").replacingOccurrences(of: "'", with: "")
+        let segments = flat.split(whereSeparator: { ";|&\n`()".contains($0) }).map { $0.split(separator: " ", omittingEmptySubsequences: true).map(String.init) }
+        let prefixes: Set<String> = ["sudo", "doas", "env", "command", "nohup", "time", "exec", "xargs", "nice", "ionice", "busybox"]
+        for var tokens in segments {
+            while let first = tokens.first, prefixes.contains(first) || first.contains("=") { tokens.removeFirst() }
+            guard var name = tokens.first?.split(separator: "/").last.map(String.init)?.lowercased() else { continue }
+            if name.hasPrefix("mkfs.") { name = "mkfs" }
+            let args = Array(tokens.dropFirst())
+            let flags = args.filter { $0.hasPrefix("-") }.joined().lowercased()
+            let operands = args.filter { !$0.hasPrefix("-") }
+            let sensitive = operands.contains { ["/", "/*", "~", "~/", "$home", "${home}", "*", ".", "..", "/etc", "/usr", "/var", "/system", "/users", "/home"].contains($0.lowercased()) || $0.lowercased().hasPrefix("/dev/") }
+            switch name {
+            case "rm", "rmdir", "unlink", "shred", "srm":
+                if (flags.contains("r") || flags.contains("recursive") || name == "shred") && (sensitive || flags.contains("no-preserve-root")) { return refusal("deleting everything under a system or home folder") }
+                if sensitive && flags.contains("f") { return refusal("force-deleting a system or home folder") }
+            case "find": if args.contains("-delete") || (args.contains("-exec") && args.contains(where: { ["rm", "shred", "dd"].contains($0) })) { return refusal("find … -delete") }
+            case "dd": if args.contains(where: { $0.lowercased().hasPrefix("of=/dev/") }) { return refusal("writing straight to a disk") }
+            case "mkfs", "mke2fs", "mkswap", "fdisk", "sfdisk", "parted", "wipefs", "diskutil", "newfs", "format": return refusal("changing disks")
+            case "chmod", "chown", "chgrp": if flags.contains("r") && sensitive { return refusal("changing permissions across a system folder") }
+            case "shutdown", "reboot", "halt", "poweroff", "telinit": return refusal("shutting the machine down")
+            case "init": if args.first == "0" || args.first == "6" { return refusal("shutting the machine down") }
+            case "mv": if sensitive && operands.count >= 2 && operands.last?.lowercased() == "/dev/null" { return refusal("discarding a system folder") }
+            case "sh", "bash", "zsh", "dash", "ksh", "fish": if segments.count > 1 && command.contains("|") && (command.lowercased().contains("curl") || command.lowercased().contains("wget") || command.lowercased().contains("base64")) { return refusal("running downloaded or decoded text as a script") }
+            default: break
+            }
+        }
+        let lower = flat.lowercased()
+        for pattern in [":(){", "> /dev/sd", "> /dev/nvme", "> /dev/disk", "| sh", "|sh", "| bash", "|bash"] where lower.contains(pattern) && !(pattern.hasSuffix("sh") && !(lower.contains("curl") || lower.contains("wget") || lower.contains("base64"))) {
+            return refusal("“\(pattern)”")
+        }
         return nil
+    }
+
+    private static func refusal(_ what: String) -> String {
+        "Refused: this looks like \(what). Run it yourself from the Terminal if you really mean it."
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 struct SSHRunTool: AgentTool {
-    let spec = ToolSpec(name: "ssh_run", summary: "Run a shell command on the connected machine and return its output. Destructive commands are refused.", parameters: "command: string", risk: .remote)
+    let spec = ToolSpec(name: "ssh_run", summary: "Run a shell command on the connected machine and return its output. The user approves every command; obviously destructive ones are refused.", parameters: "command: string", risk: .remote)
     func describe(_ args: [String: JSONValue]) -> String { "On remote machine: \(args["command"]?.string ?? "")" }
     func run(_ args: [String: JSONValue], context: ToolContext) async throws -> ToolOutput {
         guard let host = context.sshHost else { throw ToolError("No remote machine is selected for this chat.") }

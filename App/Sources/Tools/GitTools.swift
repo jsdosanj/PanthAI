@@ -71,11 +71,17 @@ struct GitCommitPushTool: AgentTool {
 
         var entries: [JSONValue] = []
         var newShas = manifest.shas
+        var skipped: [String] = []
+        var modes = manifest.modes ?? [:]
         for change in changes {
-            guard let text = String(data: change.data, encoding: .utf8) else { continue }
+            guard let text = String(data: change.data, encoding: .utf8) else { skipped.append(change.path); continue }
+            // Keep a script executable: use the recorded mode, or the file's own executable bit (e.g. a script the assistant made executable).
+            let permissions = (try? FileManager.default.attributesOfItem(atPath: root.appending(path: change.path).path)[.posixPermissions] as? Int) ?? 0o644
+            let mode = (modes[change.path] == "100755" || permissions & 0o111 != 0) ? "100755" : "100644"
+            if mode == "100755" { modes[change.path] = mode }
             let blob = try await client.send("POST", "/repos/\(manifest.fullName)/git/blobs", body: ["content": .string(text), "encoding": .string("utf-8")])
             guard let sha = blob["sha"]?.string else { throw ToolError("GitHub didn't return a blob id.") }
-            entries.append(.object(["path": .string(change.path), "mode": .string("100644"), "type": .string("blob"), "sha": .string(sha)]))
+            entries.append(.object(["path": .string(change.path), "mode": .string(mode), "type": .string("blob"), "sha": .string(sha)]))
             newShas[change.path] = sha
         }
         let tree = try await client.send("POST", "/repos/\(manifest.fullName)/git/trees", body: ["base_tree": .string(manifest.headTree), "tree": .array(entries)])
@@ -87,9 +93,13 @@ struct GitCommitPushTool: AgentTool {
         _ = try await client.send("PATCH", "/repos/\(manifest.fullName)/git/refs/heads/\(encoded)", body: ["sha": .string(commitSHA), "force": .bool(false)])
 
         var updated = manifest
-        updated.headCommit = commitSHA; updated.headTree = treeSHA; updated.shas = newShas
+        updated.headCommit = commitSHA; updated.headTree = treeSHA; updated.shas = newShas; updated.modes = modes
         try WorkspaceImporter.saveManifest(updated, root: root)
-        return ToolOutput(text: "Pushed \(changes.count) file(s) to \(manifest.branch) as \(commitSHA.prefix(7)).")
+        let deleted = manifest.shas.keys.filter { !FileManager.default.fileExists(atPath: root.appending(path: $0).path) }
+        var note = "Pushed \(changes.count - skipped.count) file(s) to \(manifest.branch) as \(commitSHA.prefix(7))."
+        if !skipped.isEmpty { note += " Not pushed because they aren't text: " + skipped.prefix(5).joined(separator: ", ") + "." }
+        if !deleted.isEmpty { note += " Files missing locally were not removed on GitHub: " + deleted.sorted().prefix(5).joined(separator: ", ") + "." }
+        return ToolOutput(text: note)
     }
 }
 

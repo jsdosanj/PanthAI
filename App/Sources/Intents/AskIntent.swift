@@ -31,10 +31,14 @@ struct AskIpadAIIntent: AppIntent {
         let reply = try await session.respond(to: question).content
 
         if let record {   // keep the exchange in the chat so the app shows it too
-            record.turns += [ChatTurn(role: .user, text: question), ChatTurn(role: .assistant, text: reply)]
-            record.updatedAt = .now
-            try? context.save()
-            ChatIndexer.update(record)
+            if let live = ChatRegistry.model(record.id) {
+                live.appendExchange(question: question, reply: reply)   // the open chat owns its turns; writing the record would be overwritten by its next save
+            } else {
+                record.turns += [ChatTurn(role: .user, text: question), ChatTurn(role: .assistant, text: reply)]
+                record.updatedAt = .now
+                try? context.save()
+                ChatIndexer.update(record)
+            }
         }
         return .result(value: reply, dialog: IntentDialog(stringLiteral: reply))
     }
