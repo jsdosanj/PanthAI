@@ -6,10 +6,20 @@ import SwiftData
 enum AppData {
     /// True when the saved chats couldn't be opened and a temporary empty store is in use instead.
     nonisolated(unsafe) static var isDegraded = false
+    /// True when this launch is syncing with iCloud. The choice is made at launch, so changing it needs a restart.
+    nonisolated(unsafe) static var isSyncing = false
+    static let cloudContainerID = "iCloud.com.dosanjhlabs.panthai"
+
     static let container: ModelContainer = {
         let schema = Schema([ChatSessionRecord.self, WorkspaceRecord.self, ProviderRecord.self, MCPServerRecord.self, AgentRecord.self,
                              TaskRecord.self, PromptTemplate.self, SSHHostRecord.self, SSHKeyRecord.self, SnippetRecord.self])
-        if let store = try? ModelContainer(for: schema) { return store }
+        // Always say explicitly whether to sync; SwiftData would otherwise sync everything as soon as the iCloud entitlement exists.
+        let wantsSync = UserDefaults.standard.bool(forKey: Prefs.iCloudSync) && FileManager.default.ubiquityIdentityToken != nil && !NetPolicy.offline
+        if wantsSync, let store = try? ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .private(cloudContainerID))) {
+            isSyncing = true
+            return store
+        }
+        if let store = try? ModelContainer(for: schema, configurations: ModelConfiguration(schema: schema, cloudKitDatabase: .none)) { return store }
         isDegraded = true   // never crash on launch; the saved data is left untouched
         return try! ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }()

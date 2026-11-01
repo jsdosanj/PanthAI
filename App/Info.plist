@@ -29,6 +29,10 @@
 	<string>PanthAI uses Face ID to unlock the app and to protect your SSH keys.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PanthAI connects to LM Studio, Ollama and other servers on your network when you add them.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
 </dict>

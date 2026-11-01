@@ -11,7 +11,7 @@ struct ScreenSmokeTests {
     private func container() throws -> ModelContainer {
         try ModelContainer(for: ChatSessionRecord.self, WorkspaceRecord.self, ProviderRecord.self, MCPServerRecord.self, AgentRecord.self,
                            TaskRecord.self, PromptTemplate.self, SSHHostRecord.self, SSHKeyRecord.self, SnippetRecord.self,
-                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+                           configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))   // never sync from a test
     }
 
     private func render<V: View>(_ name: String, @ViewBuilder _ view: () -> V) throws {
@@ -43,6 +43,8 @@ struct ScreenSmokeTests {
     @Test func benchmark() throws { try render("benchmark") { NavigationStack { BenchmarkView() } } }
     @Test func evals() throws { try render("evals") { NavigationStack { EvalView() } } }
     @Test func fineTune() throws { try render("finetune") { NavigationStack { FineTuneView() } } }
+    @Test func knowledge() throws { try render("knowledge") { KnowledgeView() } }
+    @Test func iCloud() throws { try render("icloud") { NavigationStack { Form { ICloudSection() } } } }
     @Test func settings() throws { try render("settings") { SettingsView() } }
     @Test func networkActivity() throws { try render("network") { NavigationStack { NetworkActivityView() } } }
     @Test func keyManager() throws { try render("keys") { NavigationStack { KeyManagerView() } } }

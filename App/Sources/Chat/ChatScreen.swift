@@ -55,6 +55,17 @@ struct ChatScreen: View {
                     .keyboardShortcut("i", modifiers: [.command, .option])
             }
         }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard KnowledgeData.enabled else { return false }
+            KnowledgeImporter.shared.importFiles(urls)   // dropped files go to Knowledge, where the assistant can search them
+            return true
+        }
+        .safeAreaInset(edge: .top) {
+            if let note = KnowledgeImporter.shared.message {
+                Label(note, systemImage: "books.vertical").font(.footnote).padding(8).frame(maxWidth: .infinity).background(.thinMaterial)
+                    .task(id: note) { try? await Task.sleep(for: .seconds(4)); if KnowledgeImporter.shared.message == note { KnowledgeImporter.shared.message = nil } }
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationTitle(record.title)
         .focusedSceneValue(\.chatModel, model)
@@ -64,7 +75,7 @@ struct ChatScreen: View {
             activity.appEntityIdentifier = EntityIdentifier(for: ChatEntity(record))
         }
         .onAppear {
-            if let ws = workspaces.first(where: { $0.id == record.workspaceID }) { model.attach(ws) }
+            if let ws = workspaces.first(where: { $0.id == record.workspaceID }), FileManager.default.fileExists(atPath: ws.folderURL.path) { model.attach(ws) }   // a repo synced from another iPad isn't here until it's loaded
             model.onBranch = { index, edited in branch(at: index, edited: edited) }
         }
         .alert("Send this chat to a cloud service?", isPresented: Binding(get: { model.pendingConsent != nil }, set: { if !$0 { model.pendingConsent = nil } })) {

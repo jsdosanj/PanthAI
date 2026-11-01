@@ -5,7 +5,8 @@ What the app does to protect you, and where the limits are.
 ## Data
 - **No accounts, no analytics, no servers of ours.** The privacy manifest declares no collected data.
 - **Network activity log** (Settings › Privacy & network) lists every request the app makes. **Offline mode** blocks them all.
-- Chats, memory and repos stay on the iPad. iCloud sync is limited to settings and configuration, never model files.
+- Chats, memory and repos stay on the iPad unless you turn on iCloud sync (Settings › iCloud, off by default). Sync then sends chats, agents, templates, tasks, provider and connector settings, SSH host entries (never keys or passwords) and a short list of preferences to your own private iCloud (CloudKit and the key-value store). It is handled by iPadOS, so it is not in the network activity log, and it is paused in offline mode. Model files, Knowledge, repository files and security switches never sync.
+- Knowledge (documents and photos you add) keeps only extracted text, in its own local store that is excluded from backups. Document text is treated as untrusted: after the assistant reads it, anything that changes something asks first, the same as after a web page.
 - Files are encrypted by iPadOS until first unlock; **Maximum file protection** re-encrypts them whenever the iPad is locked.
 - **Erase all data** removes chats, memory, repos, models, keys and tokens.
 
@@ -30,6 +31,9 @@ What the app does to protect you, and where the limits are.
 ## SSH
 - Host keys are pinned on first trust; a changed key is refused, not prompted.
 - Ed25519 keys are generated on the iPad; the private key is never shown or exported.
+
+## Remote commands
+- The remote-command guard is a best-effort filter that refuses obviously destructive commands (recursive deletes of system or home folders, `find -delete`, piping downloads into a shell, writing to disks, shutdown). It is not a security boundary; every remote command still needs your approval.
 
 ## Honest limits
 - Prompt injection is mitigated, not solved. Read approval prompts.

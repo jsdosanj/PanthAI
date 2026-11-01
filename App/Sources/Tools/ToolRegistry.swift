@@ -6,6 +6,7 @@ enum ToolRegistry {
         FetchURLTool(), WebSearchTool(), RunJavaScriptTool(), CreateFileTool(), RememberTool(),
         GitStatusTool(), GitBranchTool(), GitCommitPushTool(), OpenPullRequestTool(), ListIssuesTool(), CreateIssueTool(), CommentIssueTool(),
         SSHRunTool(), SFTPListTool(), SFTPReadTool(), ListPullRequestsTool(), GetPullRequestTool(), ReviewPullRequestTool(), ListWorkflowRunsTool(), GetFailedJobLogsTool(),
+        SearchKnowledgeTool(),
     ]
 
     static func tools(kind: SessionKind, hasWorkspace: Bool, networkMode: NetworkMode, hasSSH: Bool = false) -> [any AgentTool] {
@@ -22,6 +23,7 @@ enum ToolRegistry {
             case "web_search": networkMode != .off && webSearchOn
             case "run_javascript": codeExecutionOn
             case "remember": memoryOn
+            case "search_knowledge": KnowledgeData.enabled && KnowledgeData.hasSources
             default: true
             }
         }

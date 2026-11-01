@@ -4,6 +4,7 @@ import SwiftUI
 enum SidebarItem: Hashable {
     case chat(UUID)
     case models
+    case knowledge
     case hosts
     case pullRequests
     case compare
