@@ -7,7 +7,7 @@ import SwiftData
 struct AskIpadAIIntent: AppIntent {
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Ask PanthAI"
-    static let description = IntentDescription("Ask the on-device Apple model a question, optionally inside one of your chats.")
+    static let description = IntentDescription("Ask the on-device model a question, optionally inside one of your chats.")
     static let openAppWhenRun = false
 
     @Parameter(title: "Question", requestValueDialog: "What would you like to ask?")
@@ -66,7 +66,7 @@ struct OpenChatIntent: AppIntent {
 struct GetLastReplyIntent: AppIntent {
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Get Last Reply"
-    static let description = IntentDescription("Returns the most recent reply in a chat, so Siri or a shortcut can use it.")
+    static let description = IntentDescription("Returns the most recent reply in a chat so you can use it in an automation.")
     static let openAppWhenRun = false
 
     @Parameter(title: "Chat") var chat: ChatEntity
