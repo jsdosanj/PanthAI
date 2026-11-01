@@ -63,7 +63,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         Notifier.registerCategories()
+        ModelDownloader.shared.reconnect()
         return true
+    }
+
+    /// iPadOS relaunched the app because a model download finished in the background.
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        guard identifier == ModelDownloader.sessionID else { completionHandler(); return }
+        ModelDownloader.shared.backgroundCompletion = completionHandler
+        ModelDownloader.shared.reconnect()
     }
 
     /// Don't banner while the app is on screen.

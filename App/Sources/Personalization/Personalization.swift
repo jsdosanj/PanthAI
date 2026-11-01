@@ -22,6 +22,9 @@ enum Prefs {
     static let maxProtection = "sec.maxProtection"
     static let offline = "net.offline"
     static let offlineAllowLocal = "net.offlineAllowLocal"
+    static let knowledge = "knowledge.enabled"
+    static let knowledgeAuto = "knowledge.auto"
+    static let iCloudSync = "sync.iCloud"
 }
 
 enum ResponseStyle: String, CaseIterable, Identifiable, Sendable {

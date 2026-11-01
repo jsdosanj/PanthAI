@@ -10,7 +10,7 @@ final class ChatSessionRecord {
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
     var providerKey: String = ProviderChoice.apple(.onDevice).key
-    var turnsData: Data = Data()
+    @Attribute(.externalStorage) var turnsData: Data = Data()   // large values sync to iCloud as assets, not size-limited fields
     var kindRaw: String = SessionKind.chat.rawValue
     var workspaceIDString: String = ""
     var pinnedData: Data = Data()

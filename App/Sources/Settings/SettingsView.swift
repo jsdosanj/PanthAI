@@ -127,7 +127,7 @@ struct SettingsView: View {
 
     @ViewBuilder private var privacyNote: some View {
                 Section("Privacy") {
-                    Text("PanthAI has no accounts and collects no data. The advanced Apple model runs on Apple's Private Cloud Compute, so your prompts leave the iPad for Apple's servers when you choose it; Apple states it doesn't store them.")
+                    Text("PanthAI has no accounts and collects no data. iCloud sync is off until you turn it on, and then your data goes only to your own private iCloud. The advanced Apple model runs on Apple's Private Cloud Compute, so your prompts leave the iPad for Apple's servers when you choose it; Apple states it doesn't store them.")
                         .font(.footnote)
                 }
     }
@@ -146,6 +146,7 @@ struct SettingsView: View {
                     NavigationLink { page("Connectors") { ConnectorsSection(); githubSection } } label: { Label("Connectors and GitHub", systemImage: "puzzlepiece.extension") }
                     NavigationLink { page("Tools") { toolsSection } } label: { Label("Tools and memory", systemImage: "wrench.and.screwdriver") }
                     NavigationLink { page("Notifications") { notificationsSection } } label: { Label("Notifications", systemImage: "bell") }
+                    NavigationLink { page("iCloud") { ICloudSection() } } label: { Label("iCloud sync", systemImage: "icloud") }
                 }
                 Section {
                     NavigationLink { page("Security and privacy") { SecuritySection(); PrivacyNetworkSection(); privacyNote } } label: { Label("Security and privacy", systemImage: "lock.shield") }

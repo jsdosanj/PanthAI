@@ -47,6 +47,7 @@ struct RootShell: View {
             }
         case .models:
             ModelsView(state: state)
+        case .knowledge: KnowledgeView()
         case .hosts: HostsView()
         case .pullRequests: NavigationStack { PullRequestsView() }
         case .compare: NavigationStack { CompareView() }

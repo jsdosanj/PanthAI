@@ -5,6 +5,19 @@
 	<!-- Lets MLX hold larger models before iPadOS jetsam kills the app. -->
 	<key>com.apple.developer.kernel.increased-memory-limit</key>
 	<true/>
-	<!-- iCloud (CloudKit + Keychain sync) is added in Phase 2 with the sync layer. -->
+	<!-- Optional iCloud sync (Settings > iCloud): chats, agents, hosts and settings in the user's own private iCloud. -->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.dosanjhlabs.panthai</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.ubiquity-kvstore-identifier</key>
+	<string>$(TeamIdentifierPrefix)$(CFBundleIdentifier)</string>
+	<!-- Lets iCloud wake the app to deliver changes from your other devices. Xcode switches this to production when archiving. -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

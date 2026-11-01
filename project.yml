@@ -13,7 +13,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     TARGETED_DEVICE_FAMILY: "2"    # iPad only
     MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "3"
 packages:
   MLXLM:
     url: https://github.com/ml-explore/mlx-swift-lm
@@ -55,6 +55,7 @@ targets:
         NSLocalNetworkUsageDescription: PanthAI connects to LM Studio, Ollama and other servers on your network when you add them.
         NSFaceIDUsageDescription: PanthAI uses Face ID to unlock the app and to protect your SSH keys.
         UIFileSharingEnabled: true
+        UIBackgroundModes: [remote-notification]
         LSSupportsOpeningDocumentsInPlace: true
     dependencies:
       - package: MLXLM

@@ -220,6 +220,9 @@ final class ChatViewModel {
         if record.mode == .plan {
             modelPrompt = "[Plan mode: do not write final code or change anything yet. Read what you need, then give a short numbered plan and wait for the user to approve it.]\n" + modelPrompt
         }
+        let basePrompt = modelPrompt
+        let useKnowledge = record.kind == .chat && !isRemoteAgent && KnowledgeData.enabled && KnowledgeData.autoUse && KnowledgeData.hasSources
+        let knowledgeBudget = { if case .apple = choice { return 2_400 } else { return 6_000 } }()
         turns.append(.init(role: .user, text: prompt))
         if record.title == "New Chat" { record.title = String(prompt.prefix(48)) }
         isStreaming = true
@@ -227,6 +230,11 @@ final class ChatViewModel {
         streamTask = Task {
             if !isHeadless { await Notifier.authorizeIfNeeded() }
             await refreshConnectorTools()
+            var modelPrompt = basePrompt
+            if useKnowledge, let excerpts = await KnowledgeContext.block(for: prompt, budget: knowledgeBudget) {
+                modelPrompt = excerpts + "\n\n" + modelPrompt
+                tainted = true   // a document can carry instructions aimed at the model, so anything that changes something now asks first
+            }
             await converse(modelPrompt)
             isStreaming = false
             persist()
@@ -325,7 +333,7 @@ final class ChatViewModel {
         if reachesInternet, context.networkMode == .off { return finish("Network access is off for this session.", .denied) }
 
         let preview = tool.preview(call.arguments, context: context)
-        let untrustedSource = ["fetch_url", "web_search", "ssh_run", "sftp_read", "get_pull_request", "list_issues", "get_failed_job_logs"].contains(call.name) || call.name.hasPrefix("mcp_")
+        let untrustedSource = ["fetch_url", "web_search", "ssh_run", "sftp_read", "get_pull_request", "list_issues", "get_failed_job_logs", "search_knowledge"].contains(call.name) || call.name.hasPrefix("mcp_")
         let needsApproval: Bool = {
             // After reading outside content, "always allow" and auto-accept no longer apply to anything that changes something.
             if tainted, [.write, .execute, .networkWrite, .remote].contains(risk) { return true }

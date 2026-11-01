@@ -29,6 +29,8 @@ enum CustomModels {
         if let entry = all.first(where: { $0.id == id }), let path = entry.localPath { try? FileManager.default.removeItem(atPath: path) }
         all.removeAll { $0.id == id }
         save(all)
+        ModelDownloader.shared.cancel(repo: id)
+        try? FileManager.default.removeItem(at: ModelDownloader.directory(for: id))
     }
 
     /// Looks the repo up on Hugging Face and adds it. Throws if it isn't an MLX model.

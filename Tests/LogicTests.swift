@@ -115,4 +115,50 @@ struct LogicTests {
     @Test func storedHistoryHasSecretsRemoved() {
         #expect(Redactor.clean("key ghp_abcdefghijklmnopqrstuvwxyz0123456789 end", strict: false).contains("ghp_") == false)
     }
+
+    // MARK: Knowledge (RAG)
+
+    @Test func chunkerSplitsLongTextAndKeepsShortText() {
+        #expect(Chunker.split("   ").isEmpty)
+        #expect(Chunker.split("A short note.") == ["A short note."])
+        let long = (1...80).map { "Sentence number \($0) talks about topic \($0 % 7) in some detail." }.joined(separator: " ")
+        let chunks = Chunker.split(long)
+        #expect(chunks.count > 3)
+        #expect(chunks.allSatisfy { $0.count <= 1_200 })
+        #expect(chunks.joined().contains("Sentence number 80"))
+    }
+
+    @Test func extractorReadsTextAndRejectsEmptyOrBinary() throws {
+        let doc = try TextExtractor.extract(data: Data("Hello knowledge".utf8), name: "note.txt")
+        #expect(doc.kind == "text" && doc.pages.first?.text == "Hello knowledge")
+        #expect(throws: KnowledgeError.self) { try TextExtractor.extract(data: Data("   \n".utf8), name: "empty.txt") }
+        #expect(throws: KnowledgeError.self) { try TextExtractor.extract(data: Data([0xFF, 0xFE, 0x00, 0x80, 0x81, 0x82]), name: "blob.bin") }
+    }
+
+    @Test func searchFindsTheRightDocumentAndSkipsDuplicates() async throws {
+        let index = KnowledgeIndex.shared
+        try await index.removeAll()
+        func doc(_ text: String, _ name: String) throws -> ExtractedDocument { try TextExtractor.extract(data: Data(text.utf8), name: name) }
+        _ = try await index.add(name: "sourdough.txt", document: doc("Sourdough bread needs a starter, flour, water and salt. Let the dough ferment overnight before baking.", "sourdough.txt"))
+        _ = try await index.add(name: "tax.txt", document: doc("The quarterly estimated tax payment is due on the fifteenth. Keep receipts for every deduction you claim.", "tax.txt"))
+        _ = try await index.add(name: "rust.txt", document: doc("Rust ownership means each value has a single owner, and borrowing lets code read it without taking it.", "rust.txt"))
+        let repeated = try await index.add(name: "again.txt", document: doc("The quarterly estimated tax payment is due on the fifteenth. Keep receipts for every deduction you claim.", "again.txt"))
+        guard case .duplicate = repeated else { Issue.record("identical content should be detected"); return }
+
+        let hits = await index.search("when is my tax payment due", limit: 3)
+        #expect(hits.first?.sourceName == "tax.txt")
+        #expect(await index.search("starter flour", limit: 1).first?.sourceName == "sourdough.txt")
+        #expect(await index.search("zzzz qqqq", limit: 3).isEmpty || Embedder.available)   // gibberish: nothing by keyword
+        #expect(await index.stats().sources == 3)
+        try await index.removeAll()
+        #expect(await index.search("tax", limit: 3).isEmpty)
+    }
+
+    @Test func modelDownloaderOnlyWantsRunnableFilesAndStaysInsideItsFolder() {
+        for ok in ["config.json", "model.safetensors", "model-00001-of-00002.safetensors", "tokenizer.json", "tokenizer.model", "chat_template.jinja"] { #expect(ModelDownloader.wanted(ok), "\(ok)") }
+        for no in ["README.md", "onnx/model.onnx", "original/consolidated.pth", "../evil.json", ".gitattributes", "assets/logo.png"] { #expect(!ModelDownloader.wanted(no), "\(no)") }
+        let dir = ModelDownloader.directory(for: "mlx-community/Qwen3-4B-4bit")
+        #expect(dir.lastPathComponent == "mlx-community__Qwen3-4B-4bit")
+        #expect(dir.path.hasPrefix(ModelDownloader.root.path))
+    }
 }

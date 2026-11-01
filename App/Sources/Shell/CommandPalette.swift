@@ -23,6 +23,7 @@ struct CommandPalette: View {
             .init(title: "New Code Session", icon: "chevron.left.forwardslash.chevron.right") { state.newChat(kind: .code) },
             .init(title: "Toggle Details", icon: "sidebar.trailing") { state.showInspector.toggle() },
             .init(title: "Models", icon: "cpu") { state.selection = .models },
+            .init(title: "Knowledge", icon: "books.vertical") { state.selection = .knowledge },
             .init(title: "Hosts", icon: "server.rack") { state.selection = .hosts },
             .init(title: "Pull requests", icon: "arrow.triangle.pull") { state.selection = .pullRequests },
             .init(title: "Compare models", icon: "rectangle.split.2x1") { state.selection = .compare },

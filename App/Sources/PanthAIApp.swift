@@ -7,7 +7,7 @@ struct PanthAIApp: App {
     var body: some Scene {
         // Each window has its own sidebar selection, tabs and inspector (multi-window / Stage Manager).
         WindowGroup {
-            RootShell().privacyShield().task { DataProtection.apply() }
+            RootShell().privacyShield().task { DataProtection.apply(); SyncStatus.shared.start(); SettingsSync.shared.start() }
         }
         .modelContainer(AppData.container)
         .commands { AppCommands() }

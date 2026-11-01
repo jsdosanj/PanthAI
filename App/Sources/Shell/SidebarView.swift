@@ -72,6 +72,7 @@ struct SidebarView: View {
             }
             Section("Library") {
                 Label("Models", systemImage: "cpu").tag(SidebarItem.models)
+                Label("Knowledge", systemImage: "books.vertical").tag(SidebarItem.knowledge)
                 Label("Hosts", systemImage: "server.rack").tag(SidebarItem.hosts)
                 Label("Pull requests", systemImage: "arrow.triangle.pull").tag(SidebarItem.pullRequests)
                 Label("Settings", systemImage: "gearshape").tag(SidebarItem.settings)
