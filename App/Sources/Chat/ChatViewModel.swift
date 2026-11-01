@@ -407,6 +407,13 @@ final class ChatViewModel {
         if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid }
     }
 
+    /// Adds an exchange made outside the chat screen (Siri/Shortcuts) without losing it to the next save.
+    func appendExchange(question: String, reply: String) {
+        turns.append(.init(role: .user, text: question))
+        turns.append(.init(role: .assistant, text: reply))
+        persist()
+    }
+
     func stop() {
         streamTask?.cancel()
         if approvalContinuation != nil { resolveApproval(.deny) }   // a pending prompt must not outlive Stop
@@ -517,9 +524,21 @@ final class ChatViewModel {
         save()
     }
 
+    /// What goes on disk (and into the Siri/Spotlight index) has private keys and well-known token formats removed.
+    /// A file diff that contains one is dropped instead of altered, because undo must restore the exact original.
+    private static func forStorage(_ turn: ChatTurn) -> ChatTurn {
+        var t = turn
+        t.text = Redactor.clean(t.text, strict: false)
+        for text in [t.changeBefore, t.changeAfter].compactMap({ $0 }) where Redactor.clean(text, strict: false) != text {
+            t.changeBefore = nil; t.changeAfter = nil; t.changePath = nil
+            break
+        }
+        return t
+    }
+
     private func persist() {
         guard record.modelContext != nil else { return }   // the chat was deleted while it ran
-        record.turns = turns
+        record.turns = turns.map(Self.forStorage)
         record.updatedAt = .now
         save()
         ChatIndexer.update(record)

@@ -69,6 +69,7 @@ enum WorkspaceImporter {
         var headCommit: String
         var headTree: String
         var shas: [String: String]  // path -> git blob sha at head
+        var modes: [String: String]? = nil   // path -> "100755" for executable files, so a push keeps them executable
     }
 
     static func manifestURL(_ root: URL) -> URL { root.appending(path: ".panthai/manifest.json") }
@@ -103,8 +104,13 @@ enum WorkspaceImporter {
                          progress: @Sendable @escaping (Double) -> Void) async throws -> Result {
         let head = try? await client.head(fullName, branch: branch)
         let (files, truncated) = eligible(try await client.tree(fullName, ref: head?.commit ?? branch))
-        try? FileManager.default.removeItem(at: destination)
-        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        // Download into a staging folder and swap it in only on success, so a failed or cancelled reload never
+        // leaves a half-empty checkout in place of a good one.
+        let staging = destination.deletingLastPathComponent().appending(path: destination.lastPathComponent + ".downloading", directoryHint: .isDirectory)
+        try? FileManager.default.removeItem(at: staging)
+        try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: staging) }
+        let executables = Set(files.filter { $0.mode == "100755" }.map(\.path))
         var done = 0
         var bytes = 0
         try await withThrowingTaskGroup(of: (String, Data).self) { group in
@@ -115,9 +121,10 @@ enum WorkspaceImporter {
             }
             for _ in 0..<8 { addNext() }            // 8 downloads at a time
             while let (path, data) = try await group.next() {
-                let url = destination.appending(path: path)
+                let url = staging.appending(path: path)
                 try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try data.write(to: url)
+                if executables.contains(path) { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: url.path) }
                 done += 1; bytes += data.count
                 progress(Double(done) / Double(max(files.count, 1)))
                 addNext()
@@ -125,8 +132,11 @@ enum WorkspaceImporter {
         }
         if let head {
             let shas = Dictionary(files.map { ($0.path, $0.sha) }, uniquingKeysWith: { $1 })
-            try saveManifest(Manifest(fullName: fullName, baseBranch: branch, branch: branch, headCommit: head.commit, headTree: head.tree, shas: shas), root: destination)
+            try saveManifest(Manifest(fullName: fullName, baseBranch: branch, branch: branch, headCommit: head.commit, headTree: head.tree, shas: shas,
+                                      modes: Dictionary(uniqueKeysWithValues: executables.map { ($0, "100755") })), root: staging)
         }
+        try? FileManager.default.removeItem(at: destination)
+        try FileManager.default.moveItem(at: staging, to: destination)
         return Result(fileCount: done, totalBytes: bytes, truncated: truncated)
     }
 }

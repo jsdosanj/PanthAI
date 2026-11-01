@@ -20,6 +20,7 @@ struct GitHubTreeEntry: Decodable, Sendable {
     let type: String      // "blob" | "tree"
     let sha: String
     let size: Int?
+    let mode: String?     // "100644" file, "100755" executable
 }
 
 enum GitHubError: LocalizedError {

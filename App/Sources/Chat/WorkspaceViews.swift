@@ -76,6 +76,8 @@ struct RepoPickerSheet: View {
     @State private var branch = ""
     @State private var progress: Double?
     @State private var error: String?
+    @State private var pendingRepo: GitHubRepo?
+    @State private var changedFileCount = 0
     private let client = GitHubClient()
 
     var body: some View {
@@ -122,6 +124,10 @@ struct RepoPickerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
             .task { if client.token != nil { repos = (try? await client.repos()) ?? [] } }
+            .alert("Replace your changes?", isPresented: Binding(get: { pendingRepo != nil }, set: { if !$0 { pendingRepo = nil } })) {
+                Button("Replace with GitHub's copy", role: .destructive) { if let repo = pendingRepo { pendingRepo = nil; Task { await load(repo, replacingEdits: true) } } }
+                Button("Keep my changes", role: .cancel) { pendingRepo = nil }
+            } message: { Text("\(changedFileCount) file(s) in your local copy have edits that haven't been pushed. Reloading throws them away.") }
         }
     }
 
@@ -136,16 +142,22 @@ struct RepoPickerSheet: View {
         branch = branches.contains(repo.defaultBranch) ? repo.defaultBranch : (branches.first ?? "")
     }
 
-    private func load(_ repo: GitHubRepo) async {
-        progress = 0; error = nil
+    private func load(_ repo: GitHubRepo, replacingEdits: Bool = false) async {
+        error = nil
         let folder = "\(repo.fullName.replacingOccurrences(of: "/", with: "__"))__\(branch.replacingOccurrences(of: "/", with: "_"))"
-        let record = WorkspaceRecord(fullName: repo.fullName, branch: branch, folderName: folder)
+        let existing = (try? context.fetch(FetchDescriptor<WorkspaceRecord>()))?.first { $0.folderName == folder }
+        if !replacingEdits, let existing, let manifest = WorkspaceImporter.loadManifest(existing.folderURL) {
+            let changed = GitWorkspace.changes(root: existing.folderURL, manifest: manifest).count
+            if changed > 0 { changedFileCount = changed; pendingRepo = repo; return }   // ask first; reloading would discard these edits
+        }
+        progress = 0
+        let record = existing ?? WorkspaceRecord(fullName: repo.fullName, branch: branch, folderName: folder)
         do {
             let result = try await WorkspaceImporter.download(fullName: repo.fullName, branch: branch, to: record.folderURL) { value in
                 Task { @MainActor in progress = value }
             }
             record.isPrivate = repo.isPrivate; record.fileCount = result.fileCount; record.totalBytes = result.totalBytes; record.truncated = result.truncated
-            context.insert(record)
+            if existing == nil { context.insert(record) }
             try? context.save()
             model.attach(record)
             dismiss()
