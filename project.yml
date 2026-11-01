@@ -1,4 +1,4 @@
-name: ipadAI
+name: DosanjhAI
 options:
   bundleIdPrefix: com.dosanjhlabs
   deploymentTarget:
@@ -14,30 +14,96 @@ settings:
     TARGETED_DEVICE_FAMILY: "2"    # iPad only
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  MLXLM:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    exactVersion: 3.32.3
+  SwiftHuggingFace:
+    url: https://github.com/huggingface/swift-huggingface
+    exactVersion: 1.0.0
+  SwiftTransformers:
+    url: https://github.com/huggingface/swift-transformers
+    exactVersion: 1.3.5
+  Citadel:
+    url: https://github.com/orlandos-nl/Citadel
+    exactVersion: 0.12.1
+  SwiftNIOSSH:
+    url: https://github.com/Wellz26/swift-nio-ssh.git
+    minorVersion: 0.3.4
+  SwiftNIO:
+    url: https://github.com/apple/swift-nio.git
+    from: 2.81.0
+  SwiftCrypto:
+    url: https://github.com/apple/swift-crypto.git
+    from: 3.12.3
+  MLXSwift:
+    url: https://github.com/ml-explore/mlx-swift
+    minorVersion: 0.32.3
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    exactVersion: 1.99.2
 targets:
-  ipadAI:
+  DosanjhAI:
     type: application
     platform: iOS
     sources: [App/Sources, App/Resources]
+    info:
+      path: App/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSLocalNetworkUsageDescription: DosanjhAI connects to LM Studio, Ollama and other servers on your network when you add them.
+        NSFaceIDUsageDescription: DosanjhAI uses Face ID to unlock the app and to protect your SSH keys.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+    dependencies:
+      - package: MLXLM
+        product: MLXLLM
+      - package: MLXLM
+        product: MLXVLM
+      - package: MLXLM
+        product: MLXLMCommon
+      - package: MLXLM
+        product: MLXHuggingFace
+      - package: SwiftHuggingFace
+        product: HuggingFace
+      - package: SwiftTransformers
+        product: Tokenizers
+      - package: Citadel
+        product: Citadel
+      - package: SwiftTerm
+        product: SwiftTerm
+      - package: MLXSwift
+        product: MLX
+      - package: MLXSwift
+        product: MLXOptimizers
+      - package: SwiftNIOSSH
+        product: NIOSSH
+      - package: SwiftNIO
+        product: NIOCore
+      - package: SwiftCrypto
+        product: Crypto
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.ipadai
-        PRODUCT_NAME: ipadAI
-        CODE_SIGN_ENTITLEMENTS: App/ipadAI.entitlements
-        INFOPLIST_KEY_CFBundleDisplayName: ipadAI
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.dosanjhai
+        PRODUCT_NAME: DosanjhAI
+        CODE_SIGN_ENTITLEMENTS: App/DosanjhAI.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: DosanjhAI
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UIApplicationSupportsMultipleScenes: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         GENERATE_INFOPLIST_FILE: YES
-  ipadAITests:
+  DosanjhAITests:
     type: bundle.unit-test
     platform: iOS
     sources: [Tests]
     dependencies:
-      - target: ipadAI
+      - target: DosanjhAI
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
-        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.ipadai.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.dosanjhlabs.dosanjhai.tests

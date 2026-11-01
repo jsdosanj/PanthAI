@@ -1,5 +1,5 @@
 import Testing
-@testable import ipadAI
+@testable import DosanjhAI
 
 struct CompatibilityTests {
     private let ipad8 = DeviceProfile(physicalMemoryBytes: 8 * 1_073_741_824)

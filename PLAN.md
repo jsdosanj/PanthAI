@@ -1,4 +1,4 @@
-# ipadAI — Plan v1
+# DosanjhAI — Plan v1
 
 A free, private, native iPadOS AI workstation by Dosanjh Labs. Runs Apple Foundation Models and MLX models on-device, optionally calls remote providers, connects to remote MCP servers, indexes your files/photos locally, works on GitHub repos and SSH/SFTP hosts, and never collects user data.
 
@@ -10,7 +10,7 @@ UX and agent architecture are modelled on [Osaurus](https://github.com/osaurus-a
 |---|---|
 | Distribution | TestFlight first, then App Store. Built and uploaded from Xcode. |
 | Platform | iPadOS 26+, M-series iPads only. SwiftUI, Swift 6 strict concurrency. English only (all strings still go through String Catalogs so adding languages later is cheap). |
-| Name / ID | ipadAI, bundle ID `com.dosanjhlabs.ipadai`, listed as a Dosanjh Labs product. |
+| Name / ID | DosanjhAI, bundle ID `com.dosanjhlabs.dosanjhai`, listed as a Dosanjh Labs product. |
 | Price | Free forever. No ads, IAP, accounts, or analytics SDKs. |
 | Privacy | App Store label "Data Not Collected". Crash reports come only from Apple's Xcode Organizer / MetricKit (user opts in at OS level). No third-party SDKs touch user data. |
 | Model backends | (1) Apple Foundation Models, (2) MLX local models, (3) remote providers (OpenRouter first, then OpenAI-compatible, Anthropic). |
@@ -84,7 +84,7 @@ Performance targets: cold launch < 1 s to interactive, first token from a reside
 1. **libgit2 on iOS** — pick a maintained Swift wrapper (SwiftGitX vs. building libgit2 ourselves) and prove HTTPS clone/push of a private repo with a token on-device. If it fails, fall back to the GitHub Git Data API (no local `.git`).
 2. **MLX on iPad memory ceilings** — measure real loadable model sizes on the target iPads before fixing the badge thresholds.
 3. **App Review** for the command-suggestion/auto-agent features.
-4. **Name collision** — check "ipadAI" on the App Store before investing in branding.
+4. **Name collision** — check "DosanjhAI" on the App Store before investing in branding.
 
 ## 7. Open items for you
 

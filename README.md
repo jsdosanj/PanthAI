@@ -1,4 +1,4 @@
-# ipadAI
+# DosanjhAI
 
 A free, private, native AI workstation for iPad (M-series, iPadOS 26+) by Dosanjh Labs.
 On-device Apple Foundation Models and MLX models, MCP servers, local RAG, GitHub, and SSH/SFTP.
@@ -10,8 +10,8 @@ See [PLAN.md](PLAN.md) for the architecture, safety model and roadmap.
 
 ```sh
 brew install xcodegen
-xcodegen generate     # creates ipadAI.xcodeproj from project.yml
-open ipadAI.xcodeproj
+xcodegen generate     # creates DosanjhAI.xcodeproj from project.yml
+open DosanjhAI.xcodeproj
 ```
 
 Signing team: Selfless Services Ltd. Archive from Xcode and upload to TestFlight.

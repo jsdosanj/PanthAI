@@ -5,3 +5,5 @@ xcuserdata/
 *.xcuserstate
 # Generated from project.yml by `xcodegen generate`
 *.xcodeproj
+build-test/
+*.xcresult
