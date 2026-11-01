@@ -48,7 +48,7 @@ struct KeyManagerView: View {
             Section {
                 Button("Generate a new key", systemImage: "key") {
                     let key = SSHKeyRecord(name: "Key \(keys.count + 1)")
-                    _ = SSHService.generateKey(account: key.account)
+                    guard !SSHService.generateKey(account: key.account).isEmpty else { return }   // not stored (is a passcode set?), so don't list it
                     context.insert(key); try? context.save()
                 }
                 Button("Import an OpenSSH Ed25519 key…", systemImage: "square.and.arrow.down") { importing = true }

@@ -7,3 +7,4 @@ xcuserdata/
 *.xcodeproj
 build-test/
 *.xcresult
+.gstack/

@@ -13,7 +13,9 @@ enum Redactor {
         (#"(?i)\b(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*['\"]?[^\s'\"]{8,}"#, "$1=[removed]"),
     ]
 
-    static func clean(_ text: String) -> String {
-        patterns.reduce(text) { $0.replacingOccurrences(of: $1.0, with: $1.1, options: .regularExpression) }
+    /// `strict: false` keeps ordinary source code intact (only private keys and well-known token formats are removed),
+    /// so a file the assistant must edit isn't silently rewritten.
+    static func clean(_ text: String, strict: Bool = true) -> String {
+        (strict ? patterns : Array(patterns.dropLast())).reduce(text) { $0.replacingOccurrences(of: $1.0, with: $1.1, options: .regularExpression) }
     }
 }

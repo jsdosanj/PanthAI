@@ -62,6 +62,7 @@ struct PrivacyShield: ViewModifier {
                 }
             }
             .allowsHitTesting(!lock.isLocked)
+            .accessibilityHidden(lock.isLocked)   // VoiceOver must not read the chats behind the lock screen
             .onChange(of: phase) { _, new in
                 if new == .background { lock.didEnterBackground() }
                 if new == .active { lock.didBecomeActive() }

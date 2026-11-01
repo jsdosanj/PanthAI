@@ -77,14 +77,14 @@ enum SSHService {
     /// Makes a new Ed25519 key for this machine, stores it on this iPad only, and returns the line to put in ~/.ssh/authorized_keys.
     static func generateKey(account: String) -> String {
         let key = Curve25519.Signing.PrivateKey()
-        Keychain.set(key.rawRepresentation.base64EncodedString(), for: account, synchronizable: false, requireUserPresence: UserDefaults.standard.object(forKey: Prefs.protectKeys) as? Bool ?? true)
+        guard Keychain.set(key.rawRepresentation.base64EncodedString(), for: account, synchronizable: false, requireUserPresence: UserDefaults.standard.object(forKey: Prefs.protectKeys) as? Bool ?? true) else { return "" }   // e.g. no passcode set
         return publicLine(for: key)
     }
 
     /// Imports an unencrypted or passphrase-protected OpenSSH Ed25519 private key.
     static func importKey(openSSH text: String, passphrase: String?, account: String) throws -> String {
         let key = try Curve25519.Signing.PrivateKey(sshEd25519: text, decryptionKey: passphrase.flatMap { $0.isEmpty ? nil : Data($0.utf8) })
-        Keychain.set(key.rawRepresentation.base64EncodedString(), for: account, synchronizable: false, requireUserPresence: UserDefaults.standard.object(forKey: Prefs.protectKeys) as? Bool ?? true)
+        guard Keychain.set(key.rawRepresentation.base64EncodedString(), for: account, synchronizable: false, requireUserPresence: UserDefaults.standard.object(forKey: Prefs.protectKeys) as? Bool ?? true) else { throw SSHFailure.noCredentials }
         return publicLine(for: key)
     }
 
@@ -107,13 +107,16 @@ enum SSHService {
 
     private final class HostKeyCheck: NIOSSHClientServerAuthenticationDelegate, @unchecked Sendable {
         let trusted: String
+        /// Probe mode: record the key, then fail the handshake so no credentials are ever sent to an unverified machine.
+        let abortAfterCapture: Bool
         private let lock = NSLock()
         private var _seen = ""
         var seen: String { lock.withLock { _seen } }
-        init(trusted: String) { self.trusted = trusted }
+        init(trusted: String, abortAfterCapture: Bool = false) { self.trusted = trusted; self.abortAfterCapture = abortAfterCapture }
         func validateHostKey(hostKey: NIOSSHPublicKey, validationCompletePromise: EventLoopPromise<Void>) {
             let fp = SSHService.fingerprint(of: hostKey)
             lock.withLock { _seen = fp }
+            if abortAfterCapture { validationCompletePromise.fail(SSHFailure.notTrusted); return }
             if trusted.isEmpty || trusted == fp { validationCompletePromise.succeed(()) }
             else { validationCompletePromise.fail(SSHFailure.hostKeyChanged(fp)) }
         }
@@ -131,12 +134,23 @@ enum SSHService {
         return .ed25519(username: host.username, privateKey: key)
     }
 
-    /// Connects and returns the machine's host key fingerprint, without requiring prior trust. Used by “Check connection and trust”.
+    /// Reads the machine's host key fingerprint without logging in. The handshake is aborted as soon as the key is seen,
+    /// so a machine that is impersonating the real one never receives a password or key signature.
     static func probe(_ host: SSHHostSnapshot) async throws -> String {
-        let check = HostKeyCheck(trusted: "")
-        let client = try await SSHClient.connect(host: host.host, port: host.port, authenticationMethod: try authentication(host),
-                                                 hostKeyValidator: .custom(check), reconnect: .never)
-        try await client.close()
+        let check = HostKeyCheck(trusted: "", abortAfterCapture: true)
+        let placeholder = SSHAuthenticationMethod.passwordBased(username: host.username, password: "")   // never sent: the handshake stops first
+        do {
+            if let jump = host.jump.first {
+                let jumpClient = try await connect(jump)
+                nonisolated(unsafe) let method = placeholder
+                _ = try await jumpClient.jump(to: SSHClientSettings(host: host.host, port: host.port, authenticationMethod: { method }, hostKeyValidator: .custom(check)))
+            } else {
+                _ = try await SSHClient.connect(host: host.host, port: host.port, authenticationMethod: placeholder, hostKeyValidator: .custom(check), reconnect: .never)
+            }
+        } catch {
+            if !check.seen.isEmpty { return check.seen }
+            throw error
+        }
         return check.seen
     }
 

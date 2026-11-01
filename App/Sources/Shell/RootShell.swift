@@ -16,6 +16,12 @@ struct RootShell: View {
         }
         .navigationSplitViewStyle(.balanced)
         .focusedSceneValue(\.windowState, state)
+        .safeAreaInset(edge: .top) {
+            if AppData.isDegraded {
+                Label("Your saved chats couldn't be opened, so this session is temporary. Nothing was deleted. Restart the app, and update it if this keeps happening.", systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote).padding(10).frame(maxWidth: .infinity).background(.yellow.opacity(0.25))
+            }
+        }
         .sheet(isPresented: $state.showPalette) {
             CommandPalette(state: state, records: records)
         }

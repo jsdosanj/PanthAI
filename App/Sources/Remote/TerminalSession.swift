@@ -20,15 +20,20 @@ final class TerminalBridge: NSObject, TerminalViewDelegate, @unchecked Sendable 
         if let url = URL(string: link), ["http", "https"].contains(url.scheme?.lowercased()) { Task { @MainActor in UIApplication.shared.open(url) } }
     }
     func bell(source: TerminalView) {}
-    func clipboardCopy(source: TerminalView, content: Data) {
-        if let text = String(data: content, encoding: .utf8) { Task { @MainActor in UIPasteboard.general.string = text } }
-    }
+    /// Ignored on purpose: a remote program could otherwise overwrite your clipboard (OSC 52) with a hostile command.
+    func clipboardCopy(source: TerminalView, content: Data) {}
     func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
     func rangeChanged(source: TerminalView, startY: Int, endY: Int) {}
 }
 
 private final class WriterBox: @unchecked Sendable {
-    var writer: TTYStdinWriter?
+    private let lock = NSLock()
+    private var _writer: TTYStdinWriter?
+    var writer: TTYStdinWriter? { get { lock.withLock { _writer } } set { lock.withLock { _writer = newValue } } }
+    /// Keystrokes go through one queue so they reach the shell in the order they were typed.
+    let input: AsyncStream<[UInt8]>
+    let send: AsyncStream<[UInt8]>.Continuation
+    init() { (input, send) = AsyncStream.makeStream(of: [UInt8].self) }
 }
 
 /// One interactive SSH shell with a real terminal (colours, vim, tmux, htop).
@@ -48,10 +53,8 @@ final class TerminalSession {
 
     init(host: SSHHostSnapshot) {
         self.host = host
-        bridge.onSend = { [box] data in
-            let bytes = Array(data)
-            Task { try? await box.writer?.write(ByteBuffer(bytes: bytes)) }
-        }
+        bridge.onSend = { [box] data in box.send.yield(Array(data)) }
+        Task { [box] in for await bytes in box.input { try? await box.writer?.write(ByteBuffer(bytes: bytes)) } }
         bridge.onResize = { [weak self, box] cols, rows in
             Task { @MainActor in self?.cols = cols; self?.rows = rows }
             Task { try? await box.writer?.changeSize(cols: cols, rows: rows, pixelWidth: 0, pixelHeight: 0) }
@@ -72,6 +75,7 @@ final class TerminalSession {
                 let request = SSHChannelRequestEvent.PseudoTerminalRequest(wantReply: true, term: "xterm-256color", terminalCharacterWidth: cols,
                                                                            terminalRowHeight: rows, terminalPixelWidth: 0, terminalPixelHeight: 0,
                                                                            terminalModes: SSHTerminalModes([.ECHO: 1]))
+                defer { SSHService.closeLater(client) }
                 try await client.withPTY(request) { @Sendable inbound, outbound in
                     box.writer = outbound
                     for try await event in inbound {
@@ -80,7 +84,6 @@ final class TerminalSession {
                         }
                     }
                 }
-                SSHService.closeLater(client)
                 await MainActor.run { self?.state = .closed(nil) }
             } catch {
                 await MainActor.run { self?.state = .closed(error.localizedDescription) }
@@ -95,9 +98,7 @@ final class TerminalSession {
 
     /// Types text at the prompt without pressing Return, so a person reviews it first.
     func type(_ text: String) {
-        let bytes = Array(text.utf8)
-        let box = box
-        Task { try? await box.writer?.write(ByteBuffer(bytes: bytes)) }
+        box.send.yield(Array(text.utf8))
     }
 }
 

@@ -64,9 +64,10 @@ struct RunTaskIntent: AppIntent {
         let model = ChatViewModel(record: record) { try? context.save() }
         guard model.status == .available else { throw TaskError.unavailable }
         if let id = UUID(uuidString: task.workspaceIDString) {
-            model.workspace = (try? context.fetch(FetchDescriptor<WorkspaceRecord>()))?.first { $0.id == id }
+            model.attach((try? context.fetch(FetchDescriptor<WorkspaceRecord>()))?.first { $0.id == id })
             record.workspaceID = id
         }
+        if extraInput != nil { record.tainted = true }   // text from other Shortcut actions is untrusted
         model.mode = task.allowEdits ? .autoEdit : .ask
         await model.runHeadless(extraInput.map { task.prompt + "\n\n" + $0 } ?? task.prompt)
 

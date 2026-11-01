@@ -26,7 +26,7 @@ final class RemoteAgentProvider: ModelProvider, @unchecked Sendable {
         case .claude:
             // Without a person at the keyboard to approve, Claude runs read-only unless this machine allows edits.
             let mode = host.allowRemoteEdits ? "acceptEdits" : "plan"
-            command = "claude -p \(SSHService.quote(prompt)) --output-format stream-json --verbose --permission-mode \(mode)" + (session.map { " --resume \($0)" } ?? "")
+            command = "claude -p \(SSHService.quote(prompt)) --output-format stream-json --verbose --permission-mode \(mode)" + (session.map { " --resume \(SSHService.quote($0))" } ?? "")
         case .codex:
             command = "codex exec --skip-git-repo-check \(host.allowRemoteEdits ? "--full-auto " : "")\(SSHService.quote(prompt))"
         }

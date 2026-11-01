@@ -11,6 +11,7 @@ final class WorkspaceRecord {
     var fileCount: Int = 0
     var totalBytes: Int = 0
     var truncated: Bool = false
+    var isPrivate: Bool = true
     var importedAt: Date = Date.now
 
     init(fullName: String, branch: String, folderName: String) {
@@ -85,6 +86,7 @@ enum WorkspaceImporter {
         var truncated = false
         for entry in entries where entry.type == "blob" {
             let parts = entry.path.split(separator: "/").map(String.init)
+            if entry.path.hasPrefix("/") || parts.contains("..") || entry.path.contains("\0") || parts.first?.lowercased() == ".dosanjhai" { continue }   // never write outside the folder
             if parts.dropLast().contains(where: ignoredDirectories.contains) { continue }
             if binaryExtensions.contains((entry.path as NSString).pathExtension.lowercased()) { continue }
             let size = entry.size ?? 0

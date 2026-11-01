@@ -5,6 +5,7 @@ import SwiftData
 /// "Ask DosanjhAI …" from Siri, Spotlight, Shortcuts and the Action button.
 /// Runs on-device and never opens the app. Pass a chat to continue it with its full context.
 struct AskIpadAIIntent: AppIntent {
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Ask DosanjhAI"
     static let description = IntentDescription("Ask the on-device Apple model a question, optionally inside one of your chats.")
     static let openAppWhenRun = false
@@ -45,6 +46,7 @@ struct AskIpadAIIntent: AppIntent {
 }
 
 struct OpenChatIntent: AppIntent {
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Open Chat"
     static let description = IntentDescription("Open one of your DosanjhAI chats.")
     static let openAppWhenRun = true
@@ -58,6 +60,7 @@ struct OpenChatIntent: AppIntent {
 }
 
 struct GetLastReplyIntent: AppIntent {
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Get Last Reply"
     static let description = IntentDescription("Returns the most recent reply in a chat, so Siri or a shortcut can use it.")
     static let openAppWhenRun = false
@@ -72,6 +75,7 @@ struct GetLastReplyIntent: AppIntent {
 }
 
 struct SearchChatsIntent: AppIntent {
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresAuthentication
     static let title: LocalizedStringResource = "Search Chats"
     static let description = IntentDescription("Find DosanjhAI chats that mention something.")
     static let openAppWhenRun = false

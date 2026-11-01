@@ -29,7 +29,7 @@ enum Notifier {
     static let permissionCategory = "PERMISSION"
 
     static func registerCategories() {
-        let allow = UNNotificationAction(identifier: "ALLOW", title: "Allow", options: [.foreground])
+        let allow = UNNotificationAction(identifier: "ALLOW", title: "Allow", options: [.foreground, .authenticationRequired])
         let deny = UNNotificationAction(identifier: "DENY", title: "Deny", options: [.destructive])
         UNUserNotificationCenter.current().setNotificationCategories([
             UNNotificationCategory(identifier: permissionCategory, actions: [allow, deny], intentIdentifiers: [])
@@ -46,14 +46,14 @@ enum Notifier {
     }
 
     @MainActor
-    static func post(_ kind: NotificationKind, title: String, body: String, chatID: UUID?) {
+    static func post(_ kind: NotificationKind, title: String, body: String, chatID: UUID?, approvalID: UUID? = nil) {
         guard kind.enabled, !appIsActive else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = String(body.prefix(180))
         content.sound = .default
         content.threadIdentifier = chatID?.uuidString ?? kind.rawValue
-        if let chatID { content.userInfo = ["chatID": chatID.uuidString] }
+        if let chatID { content.userInfo = ["chatID": chatID.uuidString, "approvalID": approvalID?.uuidString ?? ""] }
         if kind == .permission { content.categoryIdentifier = permissionCategory; content.interruptionLevel = .timeSensitive }
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
@@ -72,10 +72,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         guard let id = (response.notification.request.content.userInfo["chatID"] as? String).flatMap(UUID.init) else { return }
         let action = response.actionIdentifier
+        let approval = (response.notification.request.content.userInfo["approvalID"] as? String).flatMap(UUID.init)
         await MainActor.run {
             switch action {
-            case "ALLOW": ChatRegistry.model(id)?.resolveApproval(.allow)
-            case "DENY": ChatRegistry.model(id)?.resolveApproval(.deny)
+            case "ALLOW": if !AppLock.shared.isLocked { ChatRegistry.model(id)?.resolveApproval(.allow, id: approval) }
+            case "DENY": ChatRegistry.model(id)?.resolveApproval(.deny, id: approval)
             default: AppRouter.shared.chatID = id
             }
         }

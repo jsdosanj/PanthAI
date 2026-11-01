@@ -30,7 +30,7 @@ struct RemoteProvider: ModelProvider {
         let system = Personalization.load().instructions(kind: kind, extra: extraInstructions)
         let trimmed = ContextBudget.trim(history, maxChars: 120_000)
         let messages: [(role: String, content: String)] =
-            trimmed.map { ($0.role == .assistant ? "assistant" : "user", $0.modelText) } + [("user", prompt)]
+            trimmed.filter { !$0.modelText.isEmpty }.map { ($0.role == .assistant ? "assistant" : "user", $0.modelText) } + [("user", prompt)]
         let config = config
         return AsyncThrowingStream { continuation in
             let task = Task {
@@ -48,7 +48,11 @@ struct RemoteProvider: ModelProvider {
                         guard line.hasPrefix("data:") else { continue }
                         let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
                         if payload == "[DONE]" { break }
-                        guard let json = JSONValue.parse(payload), let piece = Self.delta(from: json, kind: config.kind) else { continue }
+                        guard let json = JSONValue.parse(payload) else { continue }
+                        if json["type"]?.string == "error" || json["error"] != nil {
+                            throw RemoteError(message: "\(config.name): \(json["error"]?["message"]?.string ?? json["error"]?.string ?? "the stream reported an error")")
+                        }
+                        guard let piece = Self.delta(from: json, kind: config.kind) else { continue }
                         text += piece
                         continuation.yield(text)
                     }

@@ -144,7 +144,7 @@ struct RepoPickerSheet: View {
             let result = try await WorkspaceImporter.download(fullName: repo.fullName, branch: branch, to: record.folderURL) { value in
                 Task { @MainActor in progress = value }
             }
-            record.fileCount = result.fileCount; record.totalBytes = result.totalBytes; record.truncated = result.truncated
+            record.isPrivate = repo.isPrivate; record.fileCount = result.fileCount; record.totalBytes = result.totalBytes; record.truncated = result.truncated
             context.insert(record)
             try? context.save()
             model.attach(record)

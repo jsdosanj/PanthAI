@@ -21,7 +21,7 @@ final class ChatViewModel {
     private var lastEscape = Date.distantPast
     private var researchRun = false
     /// True once this chat has read content from the web, a connector or a remote machine, which could hide instructions.
-    private var tainted = false
+    private var tainted: Bool { get { record.tainted } set { if record.tainted != newValue { record.tainted = newValue; save() } } }
     private var schemaRetries = 0
     /// Set by the screen; creates a branch of this chat and opens it. (turn index, edited text for the branch)
     var onBranch: ((Int, String?) -> Void)?
@@ -31,6 +31,8 @@ final class ChatViewModel {
     private var stepLimit = ChatViewModel.maxToolSteps
     private var backgroundTask = UIBackgroundTaskIdentifier.invalid
     private(set) var choice: ProviderChoice
+    /// Set when the user picks a cloud provider they haven't agreed to send chats to yet.
+    var pendingConsent: ProviderChoice?
 
     private var provider: (any ModelProvider)?
     private var streamTask: Task<Void, Never>?
@@ -92,6 +94,7 @@ final class ChatViewModel {
 
     /// Switch the engine mid-conversation. The history carries over.
     func select(_ newChoice: ProviderChoice) {
+        if case .remote(let id, _) = newChoice, !CloudConsent.accepted(id) { pendingConsent = newChoice; return }
         stop()
         choice = newChoice
         record.providerKey = newChoice.key
@@ -135,7 +138,8 @@ final class ChatViewModel {
         isHeadless = false
     }
 
-    func resolveApproval(_ decision: ApprovalDecision) {
+    func resolveApproval(_ decision: ApprovalDecision, id: UUID? = nil) {
+        if let id, pendingApproval?.id != id { return }   // a stale notification must not approve a newer request
         approvalContinuation?.resume(returning: decision)
         approvalContinuation = nil
         pendingApproval = nil
@@ -144,7 +148,7 @@ final class ChatViewModel {
     private func requestApproval(_ approval: PendingApproval) async -> ApprovalDecision {
         if isHeadless { return .deny }
         pendingApproval = approval
-        Notifier.post(.permission, title: "DosanjhAI needs your OK", body: "\(approval.toolName): \(approval.summary)", chatID: id)
+        Notifier.post(.permission, title: "DosanjhAI needs your OK", body: "A tool is waiting for permission. Open the app to review it.", chatID: id, approvalID: approval.id)
         return await withCheckedContinuation { approvalContinuation = $0 }
     }
 
@@ -202,6 +206,7 @@ final class ChatViewModel {
         let prompt = (override ?? input).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty, !isStreaming else { return }
         if override == nil, prompt.hasPrefix("/"), handleSlash(prompt) { input = ""; return }
+        if case .remote(let id, _) = choice, !CloudConsent.accepted(id) { pendingConsent = choice; return }
         if provider == nil { provider = Self.makeProvider(for: choice) }
         guard provider != nil else { errorMessage = "This model isn't loaded. Open the Models tab and load it."; return }
         input = ""
@@ -218,7 +223,7 @@ final class ChatViewModel {
         turns.append(.init(role: .user, text: prompt))
         if record.title == "New Chat" { record.title = String(prompt.prefix(48)) }
         isStreaming = true
-        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "reply") { }   // lets a cloud reply finish if you switch apps
+        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "reply") { [weak self] in MainActor.assumeIsolated { self?.stop(); self?.endBackgroundWork() } }   // lets a cloud reply finish if you switch apps
         streamTask = Task {
             if !isHeadless { await Notifier.authorizeIfNeeded() }
             await refreshConnectorTools()
@@ -262,12 +267,14 @@ final class ChatViewModel {
                 requests.append(log)
                 if requests.count > 30 { requests.removeFirst() }
             } catch is CancellationError {
+                if turns[index].text.isEmpty { turns.remove(at: index) }   // an empty reply would later be sent as empty content
                 return
             } catch {
                 errorMessage = error.localizedDescription
                 if turns[index].text.isEmpty { turns.remove(at: index) }
                 return
             }
+            if Task.isCancelled { return }   // Stop must not run a tool call that was already in the reply
             guard !availableTools.isEmpty, let call = ToolProtocol.parse(turns[index].text) else {
                 // Structured output: check the reply against the schema and ask the model to fix it (up to twice).
                 if let problem = schemaProblem(in: turns[index].text), schemaRetries < 2 {
@@ -298,7 +305,7 @@ final class ChatViewModel {
         turns.append(turn)
         let index = turns.count - 1
         func finish(_ rawText: String, _ status: ToolStatus, change: FileChange? = nil) -> String {
-            let text = Redactor.clean(rawText)
+            let text = Redactor.clean(rawText, strict: !["read_file", "search_files", "list_files"].contains(call.name))
             turn.text = text; turn.toolStatus = status
             turn.changeScope = change?.scope; turn.changePath = change?.path; turn.changeBefore = change?.before; turn.changeAfter = change?.after
             turns[index] = turn
@@ -313,14 +320,19 @@ final class ChatViewModel {
         if record.mode == .plan, risk != .read {
             return finish("Plan mode is on, so this was not run. Describe the change in your plan instead.", .denied)
         }
-        if risk == .network, context.networkMode == .off { return finish("Network access is off for this session.", .denied) }
+        let reachesInternet = risk == .network || risk == .networkWrite || call.name.hasPrefix("mcp_")
+            || ["git_branch", "git_commit_push", "open_pull_request", "create_issue", "comment_issue", "review_pull_request"].contains(call.name)
+        if reachesInternet, context.networkMode == .off { return finish("Network access is off for this session.", .denied) }
 
         let preview = tool.preview(call.arguments, context: context)
         let untrustedSource = ["fetch_url", "web_search", "ssh_run", "sftp_read", "get_pull_request", "list_issues", "get_failed_job_logs"].contains(call.name) || call.name.hasPrefix("mcp_")
         let needsApproval: Bool = {
             // After reading outside content, "always allow" and auto-accept no longer apply to anything that changes something.
             if tainted, [.write, .execute, .networkWrite, .remote].contains(risk) { return true }
-            if alwaysAllowed.contains(call.name) { return false }
+            // A page the chat read could tell the model to leak what it knows by fetching a URL, so after untrusted content every fetch asks.
+            if tainted, call.name == "fetch_url" { return true }
+            if call.name == "fetch_url", let host = URL(string: call.arguments["url"]?.string ?? "")?.host, NetPolicy.isLocal(host) { return true }   // your LAN and tailnet are not "the internet"
+            if risk != .networkWrite, alwaysAllowed.contains("\(call.name)|\(risk.rawValue)") { return false }
             switch risk {
             case .read: return false
             case .write, .execute: return record.mode != .autoEdit
@@ -331,14 +343,15 @@ final class ChatViewModel {
         if needsApproval {
             let decision = await requestApproval(.init(toolName: call.name, summary: tool.describe(call.arguments), risk: risk, change: preview, tainted: tainted))
             if decision == .deny { return finish("The user declined this action.", .denied) }
-            if decision == .allowAlways { alwaysAllowed.insert(call.name) }
+            if Task.isCancelled { return finish("Stopped before this ran.", .denied) }
+            if decision == .allowAlways, risk != .networkWrite { alwaysAllowed.insert("\(call.name)|\(risk.rawValue)") }
         }
         turns[index].toolStatus = .running
         turn.toolStatus = .running
+        if untrustedSource { tainted = true }   // before the call: an error message from a hostile server is untrusted too
         do {
             let output = try await tool.run(call.arguments, context: context)
-            if untrustedSource { tainted = true }
-            if risk == .remote { Notifier.post(.project, title: record.title, body: output.text, chatID: id) }
+            if risk == .remote { Notifier.post(.project, title: record.title, body: "A project action finished.", chatID: id) }
             return finish(output.text, .done, change: output.change)
         } catch {
             return finish("Error: \(error.localizedDescription)", .failed)
@@ -348,7 +361,7 @@ final class ChatViewModel {
     /// Restores a file to how it was before a tool edited it.
     func undo(turnID: UUID) {
         guard let index = turns.firstIndex(where: { $0.id == turnID }), let path = turns[index].changePath else { return }
-        let root = turns[index].changeScope == "documents" ? FilesFolder.root : workspace?.folderURL
+        let root = turns[index].changeScope == "documents" ? FilesFolder.created : workspace?.folderURL
         guard let url = try? WorkspacePath.resolve(path, root: root) else { return }
         let current = try? String(contentsOf: url, encoding: .utf8)
         guard current == turns[index].changeAfter else { errorMessage = "\(path) changed since this edit, so it wasn't undone."; return }
@@ -390,7 +403,14 @@ final class ChatViewModel {
         send(text)
     }
 
-    func stop() { streamTask?.cancel() }
+    private func endBackgroundWork() {
+        if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid }
+    }
+
+    func stop() {
+        streamTask?.cancel()
+        if approvalContinuation != nil { resolveApproval(.deny) }   // a pending prompt must not outlive Stop
+    }
 
     // MARK: Claude Code-style keyboard behaviour
 
@@ -484,6 +504,7 @@ final class ChatViewModel {
 
     func attach(_ workspace: WorkspaceRecord?) {
         self.workspace = workspace
+        if let workspace, !workspace.isPrivate { tainted = true }   // anyone can write to a public repo, including instructions aimed at the model
         record.workspaceID = workspace?.id
         if workspace == nil { record.pinnedPaths = [] }
         save()
@@ -497,6 +518,7 @@ final class ChatViewModel {
     }
 
     private func persist() {
+        guard record.modelContext != nil else { return }   // the chat was deleted while it ran
         record.turns = turns
         record.updatedAt = .now
         save()

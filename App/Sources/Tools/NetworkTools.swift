@@ -5,7 +5,10 @@ struct FetchURLTool: AgentTool {
                         parameters: "url: string, method?: string, headers?: object, body?: string", risk: .network)
 
     func describe(_ args: [String: JSONValue]) -> String {
-        "\((args["method"]?.string ?? "GET").uppercased()) \(args["url"]?.string ?? "?")"
+        var text = "\((args["method"]?.string ?? "GET").uppercased()) \(args["url"]?.string ?? "?")"
+        if let headers = args["headers"]?.object, !headers.isEmpty { text += "\nHeaders: " + headers.keys.sorted().joined(separator: ", ") }
+        if let body = args["body"]?.string, !body.isEmpty { text += "\nBody: " + body.prefix(400) }
+        return text
     }
 
     static func risk(for args: [String: JSONValue]) -> ToolRisk {

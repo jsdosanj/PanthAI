@@ -69,16 +69,21 @@ struct WebSearchTool: AgentTool {
 // MARK: Code execution (JavaScript, sandboxed)
 
 /// Runs JavaScript in an offscreen web view with network, files and the app all out of reach.
-/// A runaway script is abandoned after the timeout and its web process is torn down.
+/// A runaway script is abandoned after the timeout (its result is discarded and the view released); iPadOS
+/// reclaims the web process, but a tight loop can keep it busy for a while.
 @MainActor
 enum JSSandbox {
     static func run(_ code: String, timeout: Duration = .seconds(10)) async -> String {
         let configuration = WKWebViewConfiguration()
         let web = WKWebView(frame: .zero, configuration: configuration)
+        let guardrail = NoNavigation()
+        web.navigationDelegate = guardrail
+        defer { withExtendedLifetime(guardrail) {} }
         let rules = #"[{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","raw","media","svg-document","fetch","websocket","ping","popup"]},"action":{"type":"block"}}]"#
-        if let list = try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "js-sandbox", encodedContentRuleList: rules) {
-            configuration.userContentController.add(list)
+        guard let list = try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "js-sandbox", encodedContentRuleList: rules) else {
+            return "The code sandbox couldn't start its network block, so nothing was run."   // fail closed
         }
+        configuration.userContentController.add(list)
         let body = """
         const __logs = [];
         const console = { log: (...a) => __logs.push(a.map(String).join(' ')), error: (...a) => __logs.push('error: ' + a.map(String).join(' ')), warn: (...a) => __logs.push('warn: ' + a.map(String).join(' ')) };
@@ -129,6 +134,8 @@ struct RunJavaScriptTool: AgentTool {
 enum FilesFolder {
     /// Shown in the Files app under “On My iPad › DosanjhAI” (file sharing is enabled in Info.plist).
     static var root: URL { URL.documentsDirectory }
+    /// Files the assistant creates go here, so it can never overwrite your downloads, evals or anything else in the folder.
+    static var created: URL { root.appending(path: "Created by DosanjhAI", directoryHint: .isDirectory) }
 }
 
 struct CreateFileTool: AgentTool {
@@ -139,7 +146,7 @@ struct CreateFileTool: AgentTool {
     private func resolve(_ path: String) throws -> URL {
         let clean = path.trimmingCharacters(in: .whitespaces)
         guard !clean.isEmpty, !clean.hasPrefix("/"), !clean.split(separator: "/").contains("..") else { throw ToolError("Use a simple relative file name, like notes/summary.md") }
-        return FilesFolder.root.appending(path: clean)
+        return FilesFolder.created.appending(path: clean)
     }
 
     func preview(_ args: [String: JSONValue], context: ToolContext) -> FileChange? {
@@ -153,7 +160,7 @@ struct CreateFileTool: AgentTool {
         let url = try resolve(change.path)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try change.after.write(to: url, atomically: true, encoding: .utf8)
-        return ToolOutput(text: "Saved \(change.path). Open the Files app → On My iPad → DosanjhAI.", change: change)
+        return ToolOutput(text: "Saved \(change.path). Open the Files app → On My iPad → DosanjhAI → Created by DosanjhAI.", change: change)
     }
 }
 
@@ -193,5 +200,12 @@ struct RememberTool: AgentTool {
         guard let note = args["note"]?.string, !note.isEmpty, note.count < 400 else { throw ToolError("note must be a short sentence") }
         MemoryStore.append(note, agent: context.memoryAgentID)
         return ToolOutput(text: "Remembered.")
+    }
+}
+
+/// A script (or HTML) must not be able to send the web view to another address: that would be a way to leak data.
+final class NoNavigation: NSObject, WKNavigationDelegate {
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+        navigationAction.request.url?.scheme == "about" || navigationAction.request.url == nil ? .allow : .cancel
     }
 }

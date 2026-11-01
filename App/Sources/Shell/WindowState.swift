@@ -29,12 +29,14 @@ final class WindowState {
 
     func viewModel(for record: ChatSessionRecord, context: ModelContext) -> ChatViewModel {
         if let existing = viewModels[record.id] { return existing }
+        if let shared = ChatRegistry.model(record.id) { viewModels[record.id] = shared; return shared }   // pop-out windows share the running chat
         let model = ChatViewModel(record: record) { try? context.save() }
         viewModels[record.id] = model
         return model
     }
 
     func forget(_ id: UUID) {
+        (viewModels[id] ?? ChatRegistry.model(id))?.stop()
         viewModels[id] = nil
         openTabs.removeAll { $0 == id }
         if selection == .chat(id) { selection = nil }

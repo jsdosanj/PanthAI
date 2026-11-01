@@ -4,9 +4,14 @@ import SwiftData
 
 /// One SwiftData store shared by the app UI and Siri/Shortcuts intents.
 enum AppData {
+    /// True when the saved chats couldn't be opened and a temporary empty store is in use instead.
+    nonisolated(unsafe) static var isDegraded = false
     static let container: ModelContainer = {
-        do { return try ModelContainer(for: ChatSessionRecord.self, WorkspaceRecord.self, ProviderRecord.self, MCPServerRecord.self, AgentRecord.self, TaskRecord.self, PromptTemplate.self, SSHHostRecord.self, SSHKeyRecord.self, SnippetRecord.self) }
-        catch { fatalError("Couldn't open the chat store: \(error)") }
+        let schema = Schema([ChatSessionRecord.self, WorkspaceRecord.self, ProviderRecord.self, MCPServerRecord.self, AgentRecord.self,
+                             TaskRecord.self, PromptTemplate.self, SSHHostRecord.self, SSHKeyRecord.self, SnippetRecord.self])
+        if let store = try? ModelContainer(for: schema) { return store }
+        isDegraded = true   // never crash on launch; the saved data is left untouched
+        return try! ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }()
 }
 

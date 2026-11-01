@@ -22,13 +22,13 @@ struct ChatScreen: View {
         copy.parentID = record.id
         copy.samplingData = record.samplingData; copy.schemaText = record.schemaText; copy.networkRaw = record.networkRaw
         copy.networkHostsData = record.networkHostsData; copy.agentIDString = record.agentIDString
-        copy.workspaceIDString = record.workspaceIDString; copy.pinnedData = record.pinnedData; copy.mcpData = record.mcpData; copy.modeRaw = record.modeRaw
+        copy.tainted = record.tainted; copy.workspaceIDString = record.workspaceIDString; copy.pinnedData = record.pinnedData; copy.mcpData = record.mcpData; copy.modeRaw = record.modeRaw
         context.insert(copy)
         try? context.save()
         state.open(copy.id)
         if let edited {
             let branchModel = state.viewModel(for: copy, context: context)
-            branchModel.workspace = model.workspace
+            if let ws = model.workspace { branchModel.attach(ws) }
             Task { branchModel.send(edited) }
         }
     }
@@ -64,8 +64,17 @@ struct ChatScreen: View {
             activity.appEntityIdentifier = EntityIdentifier(for: ChatEntity(record))
         }
         .onAppear {
-            model.workspace = workspaces.first { $0.id == record.workspaceID }
+            if let ws = workspaces.first(where: { $0.id == record.workspaceID }) { model.attach(ws) }
             model.onBranch = { index, edited in branch(at: index, edited: edited) }
+        }
+        .alert("Send this chat to a cloud service?", isPresented: Binding(get: { model.pendingConsent != nil }, set: { if !$0 { model.pendingConsent = nil } })) {
+            Button("Send to this provider") {
+                if case .remote(let id, _) = model.pendingConsent { CloudConsent.accept(id) }
+                if let choice = model.pendingConsent { model.pendingConsent = nil; model.select(choice) }
+            }
+            Button("Cancel", role: .cancel) { model.pendingConsent = nil }
+        } message: {
+            Text("Your messages, and any file, web page or tool output in this chat, will leave this iPad and go to the provider you chose. Their privacy policy applies, not DosanjhAI's.")
         }
         .sheet(isPresented: Bindable(model).showRepoPicker) { RepoPickerSheet(model: model) }
         .sheet(isPresented: Bindable(model).showHistorySearch) { PromptHistorySheet(model: model) }

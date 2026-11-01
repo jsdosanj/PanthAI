@@ -9,6 +9,7 @@ struct SSHHostEditor: View {
     @State private var ownKeyLine = ""
     @State private var status = ""
     @State private var pendingFingerprint: String?
+    @State private var pendingFor = ""
     @State private var busy = false
 
     private var jump: SSHHostRecord? { allHosts.first { $0.id.uuidString == host.jumpHostIDString } }
@@ -58,8 +59,12 @@ struct SSHHostEditor: View {
             Section {
                 Button(busy ? "Connecting…" : "Check connection and trust", systemImage: "checkmark.shield") { Task { await probe() } }.disabled(busy || host.host.isEmpty)
                 if let pendingFingerprint {
-                    Text("Does this match the machine's host key?\n\(pendingFingerprint)").font(.footnote.monospaced())
-                    Button("Trust this machine") { host.trustedFingerprint = pendingFingerprint; self.pendingFingerprint = nil; status = "Trusted." }
+                    Text("Does this match the machine's host key? No password or key was sent to find out.\n\(pendingFingerprint)").font(.footnote.monospaced())
+                    Button("Trust this machine") {
+                        if pendingFor == "\(host.host):\(host.port)" { host.trustedFingerprint = pendingFingerprint; status = "Trusted." }
+                        else { status = "The address changed since the check. Check the connection again." }
+                        self.pendingFingerprint = nil
+                    }
                 } else if !host.trustedFingerprint.isEmpty {
                     LabeledContent("Trusted key", value: host.trustedFingerprint).font(.caption)
                     Button("Forget trust", role: .destructive) { host.trustedFingerprint = "" }
@@ -85,7 +90,7 @@ struct SSHHostEditor: View {
 
     private func probe() async {
         busy = true; status = ""
-        do { pendingFingerprint = try await SSHService.probe(host.snapshot(jump: jump)) }
+        do { pendingFingerprint = try await SSHService.probe(host.snapshot(jump: jump)); pendingFor = "\(host.host):\(host.port)" }
         catch { status = error.localizedDescription }
         busy = false
     }

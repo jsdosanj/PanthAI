@@ -71,4 +71,35 @@ struct LogicTests {
     @Test func csvEscapesQuotes() {
         #expect(CSV.escape("a\"b") == "\"a\"\"b\"")
     }
+
+    @Test func importerRefusesUnsafePaths() {
+        func entry(_ path: String) -> GitHubTreeEntry { try! JSONDecoder().decode(GitHubTreeEntry.self, from: Data(#"{"path":"\#(path)","type":"blob","sha":"x","size":10}"#.utf8)) }
+        let kept = WorkspaceImporter.eligible([entry("../etc/passwd"), entry("/abs/file"), entry("src/ok.swift"), entry("node_modules/x/a.js"), entry("logo.png")]).files.map(\.path)
+        #expect(kept == ["src/ok.swift"])
+    }
+
+    @Test func localDetectionCannotBeFooled() {
+        #expect(!NetPolicy.isLocal("10.0.0.1.evil.com"))
+        #expect(!NetPolicy.isLocal("2001:4860:4860::8888"))
+        #expect(!NetPolicy.isLocal(""))
+        #expect(NetPolicy.isLocal("::1"))
+        #expect(NetPolicy.isLocal("my-mac"))
+        #expect(!NetPolicy.isLocal("300.1.1.1"))
+    }
+
+    @Test func jsonFencesAreNotToolCalls() {
+        #expect(ToolProtocol.parse("```json\n{\"name\": \"my-app\", \"version\": \"1\"}\n```") == nil)
+    }
+
+    @Test func reservedFolderCannotBeReachedWithDotSegments() {
+        let root = URL(filePath: "/tmp/ws")
+        #expect(throws: ToolError.self) { try WorkspacePath.resolve("./.dosanjhai/manifest.json", root: root) }
+        #expect(throws: ToolError.self) { try WorkspacePath.resolve(".DOSANJHAI/manifest.json", root: root) }
+    }
+
+    @Test func gentleRedactionKeepsSourceCode() {
+        let code = "let apiKey = config.apiKeyValueLongerThanEight\nstruct S { var password: SomeLongTypeName }"
+        #expect(Redactor.clean(code, strict: false) == code)
+        #expect(Redactor.clean("ghp_abcdefghijklmnopqrstuvwxyz0123456789", strict: false).contains("removed"))
+    }
 }

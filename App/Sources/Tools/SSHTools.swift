@@ -12,7 +12,7 @@ struct SSHRunTool: AgentTool {
 }
 
 struct SFTPListTool: AgentTool {
-    let spec = ToolSpec(name: "sftp_list", summary: "List a folder on the connected machine.", parameters: "path: string", risk: .network)
+    let spec = ToolSpec(name: "sftp_list", summary: "List a folder on the connected machine.", parameters: "path: string", risk: .remote)
     func run(_ args: [String: JSONValue], context: ToolContext) async throws -> ToolOutput {
         guard let host = context.sshHost else { throw ToolError("No remote machine is selected for this chat.") }
         let (path, items) = try await SSHService.list(host, path: args["path"]?.string ?? ".")
@@ -21,7 +21,7 @@ struct SFTPListTool: AgentTool {
 }
 
 struct SFTPReadTool: AgentTool {
-    let spec = ToolSpec(name: "sftp_read", summary: "Read a text file on the connected machine.", parameters: "path: string", risk: .network)
+    let spec = ToolSpec(name: "sftp_read", summary: "Read a text file on the connected machine.", parameters: "path: string", risk: .remote)
     func run(_ args: [String: JSONValue], context: ToolContext) async throws -> ToolOutput {
         guard let host = context.sshHost, let path = args["path"]?.string else { throw ToolError("A connected machine and path are required.") }
         let data = try await SSHService.read(host, path: path, limit: 60_000)

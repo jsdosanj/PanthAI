@@ -112,9 +112,12 @@ struct SFTPBrowserView: View {
     private func download(_ item: SSHService.RemoteItem) async {
         await run {
             let data = try await SSHService.read(host, path: full(item.name), limit: 50_000_000)
-            let folder = FilesFolder.root.appending(path: "Downloads/\(host.name)", directoryHint: .isDirectory)
+            let safeHost = host.name.components(separatedBy: CharacterSet(charactersIn: "/\\:")).joined(separator: "-")
+            let folder = FilesFolder.root.appending(path: "Downloads/\(safeHost)", directoryHint: .isDirectory)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let url = folder.appending(path: item.name)
+            let leaf = URL(filePath: item.name).lastPathComponent   // a server can send "../x"; keep only the last part
+            guard !leaf.isEmpty, leaf != "..", leaf != "." else { throw RemoteError(message: "That file name isn't safe to save.") }
+            let url = folder.appending(path: leaf)
             try data.write(to: url)
             downloaded = url
         }
@@ -124,6 +127,7 @@ struct SFTPBrowserView: View {
         await run {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard url.isFileURL else { throw RemoteError(message: "Only files can be uploaded.") }   // a dropped web link would bypass offline mode
             let data = try Data(contentsOf: url)
             try await SSHService.write(host, path: full(url.lastPathComponent), data: data)
         }

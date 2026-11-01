@@ -137,6 +137,7 @@ struct ArtifactPreview: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let web = WKWebView(frame: .zero)
+        web.navigationDelegate = context.coordinator
         web.isOpaque = false
         let rules = """
         [{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","raw","media","svg-document","fetch","websocket","ping","popup"]},"action":{"type":"block"}}]
@@ -150,4 +151,5 @@ struct ArtifactPreview: UIViewRepresentable {
     }
 
     func updateUIView(_ web: WKWebView, context: Context) {}
+    func makeCoordinator() -> NoNavigation { NoNavigation() }
 }

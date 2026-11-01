@@ -23,6 +23,8 @@ final class ChatSessionRecord {
     var schemaText: String = ""
     var parentIDString: String = ""
     var sshHostIDString: String = ""
+    /// This chat has read web, connector or remote-machine content (or a public repo), so approvals can no longer be waived.
+    var tainted: Bool = false
 
     init(providerKey: String = ProviderChoice.apple(.onDevice).key, kind: SessionKind = .chat) {
         self.providerKey = providerKey
@@ -157,5 +159,16 @@ enum PermissionMode: String, CaseIterable, Sendable {
     var next: PermissionMode {
         let all = Self.allCases
         return all[(all.firstIndex(of: self)! + 1) % all.count]
+    }
+}
+
+/// First-use consent before a chat is sent to a cloud or network provider (App Review 5.1.2(i) and plain honesty).
+enum CloudConsent {
+    private static let key = "consent.cloud"
+    static func accepted(_ id: UUID) -> Bool { (UserDefaults.standard.stringArray(forKey: key) ?? []).contains(id.uuidString) }
+    static func accept(_ id: UUID) {
+        var all = UserDefaults.standard.stringArray(forKey: key) ?? []
+        if !all.contains(id.uuidString) { all.append(id.uuidString) }
+        UserDefaults.standard.set(all, forKey: key)
     }
 }

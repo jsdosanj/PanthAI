@@ -11,7 +11,8 @@ struct MCPTool: Sendable, Identifiable {
     var parameterList: String {
         let required = Set((schema["required"]?.array ?? []).compactMap(\.string))
         let props = schema["properties"]?.object ?? [:]
-        return props.keys.sorted().prefix(8).map { key in
+        return props.keys.sorted().prefix(8).map { rawKey in
+            let key = rawKey.filter { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }
             let type = props[key]?["type"]?.string ?? "any"
             return "\(key)\(required.contains(key) ? "" : "?"): \(type)"
         }.joined(separator: ", ")
@@ -132,14 +133,19 @@ actor MCPClient {
         repeat {
             let result = try await request("tools/list", cursor.map { ["cursor": .string($0)] } ?? [:])
             for item in result["tools"]?.array ?? [] {
-                guard let name = item["name"]?.string else { continue }
-                tools.append(MCPTool(name: name, summary: String((item["description"]?.string ?? "").prefix(140)),
+                guard let name = item["name"]?.string, name.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" || $0 == "." }) else { continue }
+                tools.append(MCPTool(name: name, summary: Self.cleanDescription(item["description"]?.string ?? ""),
                                      schema: item["inputSchema"] ?? .object([:]),
                                      readOnly: item["annotations"]?["readOnlyHint"]?.bool ?? false))
             }
             cursor = result["nextCursor"]?.string
         } while cursor != nil && tools.count < 200
         return tools
+    }
+
+    /// Tool descriptions come from the server and are pasted into the prompt, so strip anything that could pose as a new instruction block.
+    private static func cleanDescription(_ text: String) -> String {
+        String(text.replacingOccurrences(of: "`", with: "'").replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression).prefix(140))
     }
 
     func callTool(_ name: String, arguments: [String: JSONValue]) async throws -> String {

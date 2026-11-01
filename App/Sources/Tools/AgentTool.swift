@@ -109,7 +109,7 @@ enum ToolProtocol {
     }
 
     static func parse(_ text: String) -> ParsedToolCall? {
-        let pattern = #"```(?:tool|json)?\s*\n(\{[\s\S]*?\})\s*\n```"#
+        let pattern = #"```tool\s*\n(\{[\s\S]*?\})\s*\n```"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let range = NSRange(text.startIndex..., in: text)
         for match in regex.matches(in: text, range: range) {

@@ -51,7 +51,7 @@ enum MCPOAuth {
         guard let registration = server["registration_endpoint"]?.string else {
             throw MCPError.server("This server needs a pre-registered app, which DosanjhAI can't do. Paste an access token instead.")
         }
-        let register = try await postJSON(URL(string: registration)!, body: [
+        let register = try await postJSON(try secure(registration), body: [
             "client_name": .string("DosanjhAI"), "redirect_uris": .array([.string(redirect)]),
             "grant_types": .array([.string("authorization_code"), .string("refresh_token")]),
             "response_types": .array([.string("code")]), "token_endpoint_auth_method": .string("none"),
@@ -62,7 +62,7 @@ enum MCPOAuth {
         let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URL
         let state = randomString(24)
         let resource = resourceMeta["resource"]?.string ?? serverURL.absoluteString
-        var comps = URLComponents(string: authorize)!
+        guard var comps = URLComponents(url: try secure(authorize), resolvingAgainstBaseURL: false) else { throw MCPError.server("Bad sign-in address.") }
         var items = comps.queryItems ?? []
         items += [.init(name: "response_type", value: "code"), .init(name: "client_id", value: clientID), .init(name: "redirect_uri", value: redirect),
                   .init(name: "code_challenge", value: challenge), .init(name: "code_challenge_method", value: "S256"),
@@ -72,7 +72,8 @@ enum MCPOAuth {
         }
         comps.queryItems = items
 
-        let callback = try await WebAuth.run(url: comps.url!, scheme: "dosanjhai")
+        guard let authURL = comps.url else { throw MCPError.server("Bad sign-in address.") }
+        let callback = try await WebAuth.run(url: authURL, scheme: "dosanjhai")
         let returned = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
         guard returned.first(where: { $0.name == "state" })?.value == state, let code = returned.first(where: { $0.name == "code" })?.value else {
             throw MCPError.server("Sign-in was cancelled or failed.")
@@ -118,7 +119,7 @@ enum MCPOAuth {
     }
 
     private static func token(endpoint: String, form: [String: String]) async throws -> (access: String, refresh: String?, expiresIn: TimeInterval) {
-        var request = URLRequest(url: URL(string: endpoint)!)
+        var request = URLRequest(url: try secure(endpoint))
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -129,6 +130,12 @@ enum MCPOAuth {
             throw MCPError.server("Sign-in didn't return a token.")
         }
         return (access, json["refresh_token"]?.string, TimeInterval(json["expires_in"]?.int ?? 3600))
+    }
+
+    /// Server-supplied addresses must be https; a plain-http token endpoint would leak the sign-in code.
+    private static func secure(_ text: String) throws -> URL {
+        guard let url = URL(string: text), url.scheme == "https", url.host != nil else { throw MCPError.server("The sign-in service gave an insecure or invalid address.") }
+        return url
     }
 
     private static func randomString(_ length: Int) -> String {
@@ -163,7 +170,7 @@ private enum WebAuth {
             session.presentationContextProvider = anchor
             session.prefersEphemeralWebBrowserSession = false
             Self.session = session
-            session.start()
+            if !session.start() { continuation.resume(throwing: MCPError.server("Couldn't open the sign-in window.")) }
         }
     }
 }

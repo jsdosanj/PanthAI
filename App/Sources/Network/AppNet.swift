@@ -18,10 +18,15 @@ enum NetPolicy {
 
     /// Addresses on your own network or tailnet: localhost, .local, private ranges, Tailscale (100.64/10 and *.ts.net).
     static func isLocal(_ host: String) -> Bool {
-        let h = host.lowercased()
-        if h == "localhost" || h.hasSuffix(".local") || h.hasSuffix(".ts.net") || !h.contains(".") { return true }
-        let parts = h.split(separator: ".").compactMap { Int($0) }
-        guard parts.count == 4 else { return false }
+        let h = host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        if h.isEmpty { return false }
+        if h == "localhost" || h.hasSuffix(".local") || h.hasSuffix(".ts.net") { return true }
+        if h.contains(":") { return h == "::1" || h.hasPrefix("fe80:") || h.hasPrefix("fc") || h.hasPrefix("fd") }   // IPv6: loopback, link-local, unique-local only
+        let labels = h.split(separator: ".", omittingEmptySubsequences: false)
+        let numbers = labels.compactMap { Int($0) }
+        if numbers.count != labels.count { return labels.count == 1 }   // a bare name like "my-mac"; a dotted name with letters is public
+        guard numbers.count == 4, numbers.allSatisfy({ (0...255).contains($0) }) else { return false }
+        let parts = numbers
         return parts[0] == 10 || parts[0] == 127 || (parts[0] == 192 && parts[1] == 168)
             || (parts[0] == 172 && (16...31).contains(parts[1])) || (parts[0] == 100 && (64...127).contains(parts[1]))
     }
@@ -110,12 +115,25 @@ final class NetGuardProtocol: URLProtocol, URLSessionDataDelegate, @unchecked Se
         }
         let mutable = (request as NSURLRequest).mutableCopy() as! NSMutableURLRequest
         URLProtocol.setProperty(true, forKey: Self.handledKey, in: mutable)
-        let inner = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil   // authenticated responses must not land in a shared disk cache
+        let inner = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         innerTask = inner.dataTask(with: mutable as URLRequest)
         innerTask?.resume()
     }
 
     override func stopLoading() { innerTask?.cancel() }
+
+    /// Every hop is checked again, and credentials never follow a redirect to another host.
+    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+        guard let url = request.url, !NetPolicy.blocks(url) else { completionHandler(nil); return }
+        var next = request
+        if url.host != task.originalRequest?.url?.host {
+            for header in ["Authorization", "x-api-key", "X-Subscription-Token", "Mcp-Session-Id", "api-key"] { next.setValue(nil, forHTTPHeaderField: header) }
+        }
+        completionHandler(next)
+    }
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
         status = String((response as? HTTPURLResponse)?.statusCode ?? 0)

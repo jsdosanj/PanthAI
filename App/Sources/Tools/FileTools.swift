@@ -8,7 +8,8 @@ enum WorkspacePath {
         guard !clean.isEmpty, !clean.hasPrefix("/"), !clean.split(separator: "/").contains("..") else {
             throw ToolError("Path must be relative to the repo root and stay inside it: \(path)")
         }
-        guard !clean.hasPrefix(".dosanjhai") else { throw ToolError("That path is reserved.") }
+        let parts = clean.split(separator: "/").map(String.init)
+        guard !parts.contains("."), parts.first?.lowercased() != ".dosanjhai" else { throw ToolError("That path is reserved.") }
         let url = root.appending(path: clean)
         guard url.standardizedFileURL.path.hasPrefix(root.standardizedFileURL.path) else { throw ToolError("Path escapes the repo.") }
         return url
