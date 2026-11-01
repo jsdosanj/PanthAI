@@ -54,7 +54,7 @@ struct SidebarView: View {
                     state.newChat(in: context, kind: state.sidebarKind)
                 }
                 Button { state.showPalette = true } label: {
-                    Label("Search & Commands", systemImage: "magnifyingglass")
+                    Label("Commands", systemImage: "command")
                 }
             }
             ForEach(groups, id: \.title) { group in

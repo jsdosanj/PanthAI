@@ -24,9 +24,7 @@ struct SettingsView: View {
         githubToken = ""
     }
 
-    var body: some View {
-        NavigationStack {
-            Form {
+    @ViewBuilder private var personalizeSection: some View {
                 Section {
                     TextField("Your name", text: $displayName)
                     TextField("About you (job, interests, reading level…)", text: $about, axis: .vertical)
@@ -48,7 +46,9 @@ struct SettingsView: View {
                 } footer: {
                     Text("These are sent to the model you're chatting with, as instructions. They stay on this iPad.")
                 }
+    }
 
+    @ViewBuilder private var keyboardSection: some View {
                 Section {
                     Toggle("Show keyboard when DosanjhAI opens", isOn: $focusOnLaunch)
                     Toggle("Return sends message", isOn: $returnSends)
@@ -59,7 +59,9 @@ struct SettingsView: View {
                          ? "Return sends. Shift-Return adds a new line."
                          : "Return adds a new line. Command-Return sends.")
                 }
+    }
 
+    @ViewBuilder private var notificationsSection: some View {
                 Section {
                     ForEach(NotificationKind.allCases) { kind in
                         Toggle(isOn: Binding(get: { kind.enabled }, set: { UserDefaults.standard.set($0, forKey: kind.prefKey) })) {
@@ -72,7 +74,9 @@ struct SettingsView: View {
                 } footer: {
                     Text("If you turned notifications off in iPadOS Settings, re-enable them there. Notifications are made on this iPad; nothing goes through a server.")
                 }
+    }
 
+    @ViewBuilder private var toolsSection: some View {
                 Section {
                     Toggle("Web search", isOn: $webSearch)
                     Toggle("Run code (JavaScript sandbox)", isOn: $codeExecution)
@@ -89,21 +93,9 @@ struct SettingsView: View {
                 } footer: {
                     Text("Network defaults to full access. Change it for a single chat in its details panel, including an allow-list of sites. Without a Brave key, search uses DuckDuckGo. Files the assistant creates appear in the Files app under On My iPad › DosanjhAI.")
                 }
+    }
 
-                SecuritySection()
-
-                PrivacyNetworkSection()
-
-                ProvidersSection()
-
-                ConnectorsSection()
-
-                AgentsSection()
-
-                TasksSection()
-
-                TemplatesSection()
-
+    @ViewBuilder private var githubSection: some View {
                 Section {
                     SecureField("GitHub personal access token", text: $githubToken)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -120,7 +112,9 @@ struct SettingsView: View {
                     Text(hasToken ? "Token saved in your Keychain (syncs via iCloud Keychain). Used only to talk to GitHub."
                                   : "Create a fine-grained token with Contents (read & write) and Pull requests access. Stored in your Keychain.")
                 }
+    }
 
+    @ViewBuilder private var siriSection: some View {
                 Section {
                     Toggle("Let Siri and Spotlight use my chats", isOn: $siriContext)
                         .onChange(of: siriContext) { _, on in if !on { ChatIndexer.removeAll() } }
@@ -129,10 +123,32 @@ struct SettingsView: View {
                 } footer: {
                     Text("Say \"Ask DosanjhAI\", or \"Open [chat] in DosanjhAI\". Siri can also see which chat is on screen and search your chats. Titles and recent messages are added to this iPad's on-device search index; nothing leaves the iPad. Turning this off removes them.")
                 }
+    }
 
+    @ViewBuilder private var privacyNote: some View {
                 Section("Privacy") {
                     Text("DosanjhAI has no accounts and collects no data. The advanced Apple model runs on Apple's Private Cloud Compute, so your prompts leave the iPad for Apple's servers when you choose it; Apple states it doesn't store them.")
                         .font(.footnote)
+                }
+    }
+
+    private func page<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
+        Form { content() }.navigationTitle(title)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    NavigationLink { page("General") { personalizeSection; keyboardSection; siriSection } } label: { Label("General", systemImage: "slider.horizontal.3") }
+                    NavigationLink { page("Models") { ProvidersSection() } } label: { Label("Model providers", systemImage: "cloud") }
+                    NavigationLink { page("Assistants") { AgentsSection(); TemplatesSection(); TasksSection() } } label: { Label("Agents, templates and tasks", systemImage: "person.2") }
+                    NavigationLink { page("Connectors") { ConnectorsSection(); githubSection } } label: { Label("Connectors and GitHub", systemImage: "puzzlepiece.extension") }
+                    NavigationLink { page("Tools") { toolsSection } } label: { Label("Tools and memory", systemImage: "wrench.and.screwdriver") }
+                    NavigationLink { page("Notifications") { notificationsSection } } label: { Label("Notifications", systemImage: "bell") }
+                }
+                Section {
+                    NavigationLink { page("Security and privacy") { SecuritySection(); PrivacyNetworkSection(); privacyNote } } label: { Label("Security and privacy", systemImage: "lock.shield") }
                 }
             }
             .navigationTitle("Settings")

@@ -55,7 +55,7 @@ struct CommandPalette: View {
             }
             .listStyle(.plain)
         }
-        .navigationTitle("Search & Commands")
+        .navigationTitle("Commands")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
         }
